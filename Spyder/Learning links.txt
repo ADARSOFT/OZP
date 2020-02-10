@@ -1,0 +1,17 @@
+Other data resources
+https://www.kaggle.com/janiobachmann/bank-marketing-campaign-opening-a-term-deposit
+https://www.kaggle.com/aleksandradeis/bank-marketing-analysis
+https://www.kaggle.com/goldens/bank-marketing-eda-model-and-plotly
+
+Data preparation and exploration
+
+https://www.analyticsvidhya.com/blog/2015/09/build-predictive-model-10-minutes-python/
+https://pandas.pydata.org/pandas-docs/stable/user_guide/missing_data.html
+https://www.kdnuggets.com/2017/06/7-steps-mastering-data-preparation-python.html
+
+
+Missing values:
+
+https://clevertap.com/blog/how-to-treat-missing-values-in-your-data-part-i/
+https://clevertap.com/blog/how-to-treat-missing-values-in-your-data-part-ii/
+https://pandas.pydata.org/pandas-docs/stable/user_guide/missing_data.html
