@@ -15,3 +15,6 @@ Missing values:
 https://clevertap.com/blog/how-to-treat-missing-values-in-your-data-part-i/
 https://clevertap.com/blog/how-to-treat-missing-values-in-your-data-part-ii/
 https://pandas.pydata.org/pandas-docs/stable/user_guide/missing_data.html
+
+https://stats.stackexchange.com/questions/225175/why-do-some-people-use-999-or-9999-to-replace-missing-values
+
