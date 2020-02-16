@@ -9,6 +9,9 @@ https://www.analyticsvidhya.com/blog/2015/09/build-predictive-model-10-minutes-p
 https://pandas.pydata.org/pandas-docs/stable/user_guide/missing_data.html
 https://www.kdnuggets.com/2017/06/7-steps-mastering-data-preparation-python.html
 
+Prepare data for predictive modeling
+https://www.analyticsvidhya.com/blog/2015/11/easy-methods-deal-categorical-variables-predictive-modeling/
+
 
 Missing values:
 
