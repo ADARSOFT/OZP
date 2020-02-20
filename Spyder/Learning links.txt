@@ -21,3 +21,8 @@ https://pandas.pydata.org/pandas-docs/stable/user_guide/missing_data.html
 
 https://stats.stackexchange.com/questions/225175/why-do-some-people-use-999-or-9999-to-replace-missing-values
 
+All use case resolved "towards data science"
+https://towardsdatascience.com/building-a-logistic-regression-in-python-step-by-step-becd4d56c9c8
+https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
+
+
