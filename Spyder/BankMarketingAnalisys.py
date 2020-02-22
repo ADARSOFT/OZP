@@ -33,7 +33,7 @@ categoric_data.nunique() # Check if categoric data has to many levels (that can 
 label.nunique()
 
 numeric_data['pdays'].value_counts()
-numeric_data['nr.employed'].value_counts()
+numeric_data['nr.employed'].value_counts() # Value no in row 760 is categoric and beacause of that whole column isn't float64 data type. We need to change that.
 
 nr_employeed_mode = numeric_data['nr.employed'].mode()
 
@@ -70,6 +70,7 @@ label = label.fillna(label.mode()[0])
 ## Missing values numeric data
 total_missing_for_numeric_columns = numeric_data.isnull().sum()
 numeric_missing_data_rows = numeric_data[numeric_data.isnull().any(axis=1)]
+numeric_total_missing_data_rows = numeric_data.isnull().sum()
 
 # fill numeric missing data by mean of column 
 numeric_data = numeric_data.fillna(numeric_data.mean())
@@ -129,22 +130,45 @@ categoric_data['marital'].value_counts()
 categoric_data['housing'].value_counts() # possible values yes/no/unknown
 categoric_data['loan'].value_counts() # possible values yes/no/unknown
 
-
-indexes_not_missing_housing_values = categoric_data[categoric_data['housing'] != 'unknown'].index.values 
-x_housing_train = numeric_data[numeric_data.index.isin(indexes_not_missing_housing_values)]
-x_housing_test = numeric_data[~numeric_data.index.isin(indexes_not_missing_housing_values)]
-Y_housing_train = categoric_data[categoric_data.index.isin(indexes_not_missing_housing_values)]['housing'].map(label_codes)
+# Housing imputation section
+indexes_not_missing_housing_values = categoric_data[categoric_data['housing'] != 'unknown'].index.values # get training data indexes
+x_housing_train = numeric_data[numeric_data.index.isin(indexes_not_missing_housing_values)] # get features for training
+x_housing_test = numeric_data[~numeric_data.index.isin(indexes_not_missing_housing_values)] # get features for prediction
+Y_housing_train = categoric_data[categoric_data.index.isin(indexes_not_missing_housing_values)]['housing'].map(label_codes) # get labels for training (housing column)
 
 # Fit housing imputation 
 alg_housing_imputation = LogisticRegression(random_state=0).fit(x_housing_train, Y_housing_train)
 # Predict housing imputation
 housing_predicted_imputation = alg_housing_imputation.predict(x_housing_test)
-index_missing_housing = categoric_data[categoric_data['housing'] == 'unknown'].index
-imputed_housing_missing_values = pd.DataFrame(data = housing_predicted_imputation, index = index_missing_housing, columns = ['housing'])
-imputed_housing_missing_values['housing'] = imputed_housing_missing_values['housing'].map(label_codes_inverse)
 
-# impute housing data
-categoric_data.loc[imputed_housing_missing_values.index.values, 'housing'] = imputed_housing_missing_values.loc[:,'housing']
+# Create data frame with predicted values
+index_missing_housing = categoric_data[categoric_data['housing'] == 'unknown'].index # get indexes of missing categorical rows
+imputed_housing_missing_values = pd.DataFrame(data = housing_predicted_imputation, index = index_missing_housing, columns = ['housing']) # create data frame for new imputed values 
+imputed_housing_missing_values['housing'] = imputed_housing_missing_values['housing'].map(label_codes_inverse) # map inverse to original data format yes/no
+
+# Impute predicted data into original dataset
+categoric_data.loc[imputed_housing_missing_values.index.values, 'housing'] = imputed_housing_missing_values.loc[:,'housing'] # impute to original data set
+
+# Loan imputation section
+indexes_not_missing_loan_values = categoric_data[categoric_data['loan'] != 'unknown'].index.values
+x_loan_train = numeric_data[numeric_data.index.isin(indexes_not_missing_loan_values)]
+x_loan_test = numeric_data[~numeric_data.index.isin(indexes_not_missing_loan_values)]
+Y_loan_train = categoric_data[categoric_data.index.isin(indexes_not_missing_loan_values)]['loan'].map(label_codes)
+
+# Fit loan imputation
+alg_loan_imputation = LogisticRegression(random_state=0).fit(x_loan_train, Y_loan_train)
+
+# Predict loan imputation
+loan_predicted_imputation = alg_loan_imputation.predict(x_loan_test);
+
+# Create new data frame with predicted values
+index_missing_loan = categoric_data[categoric_data['loan'] == 'unknown'].index 
+imputed_loan_missing_values = pd.DataFrame(data = loan_predicted_imputation, index = index_missing_loan, columns = ['loan'])
+imputed_loan_missing_values['loan'] = imputed_loan_missing_values['loan'].map(label_codes_inverse)
+
+# Impute predicted data into original dataset
+categoric_data.loc[imputed_loan_missing_values.index.values, 'loan'] = imputed_loan_missing_values.loc[:,'loan']
+
 
 # Column Education (threat unknown data as another category, because some people don't want to give informations about education, and that can be some pattern latter) MNAR (Missing Not At Random)
 
