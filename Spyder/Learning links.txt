@@ -25,4 +25,23 @@ All use case resolved "towards data science"
 https://towardsdatascience.com/building-a-logistic-regression-in-python-step-by-step-becd4d56c9c8
 https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 
+Feature selection: (pandas)
+https://towardsdatascience.com/feature-selection-with-pandas-e3690ad8504b
+https://scikit-learn.org/stable/modules/feature_selection.html
+
+One Hot Encoding (get_dummies) vs Label encoding:
+https://towardsdatascience.com/choosing-the-right-encoding-method-label-vs-onehot-encoder-a4434493149b
+
+Finding outliers:
+
+Boxplot (interquartile technique)
+https://datascience.stackexchange.com/questions/54808/how-to-remove-outliers-using-box-plot
+
+https://towardsdatascience.com/ways-to-detect-and-remove-the-outliers-404d16608dba
+
+When should drop outliers 
+https://www.theanalysisfactor.com/outliers-to-drop-or-not-to-drop/
+https://humansofdata.atlan.com/2018/03/when-delete-outliers-dataset/
+
+
 

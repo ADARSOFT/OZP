@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
+from scipy import stats
 
 #%% 1. Read source data from file, and separate as categorical and numerical data
 bank_marketing = pd.read_csv("../Data/master-data/bank-additional.csv", sep = ";")
@@ -172,11 +173,63 @@ categoric_data.loc[imputed_loan_missing_values.index.values, 'loan'] = imputed_l
 
 # Column Education (threat unknown data as another category, because some people don't want to give informations about education, and that can be some pattern latter) MNAR (Missing Not At Random)
 
-
 numeric_data['pdays'].value_counts() / len(numeric_data)
 
-#%% 3. Prepare dataset for predictive modeling (dummy variables)
-# Delete column 
+#%% 3. Prepare dataset for predictive modeling 
+# Deal with categorical variables and prepare for predictive modeling
+
+'''
+1. Convert to number (some ML libraries do not take categorical variables as input)
+	1.1 Label encoder 
+	1.2 Convert numeric bins to numbers 
+
+2. Combine levels (to avoid redundant levels in a categorical variable and to deal with 
+rare levels, we can simply combine the different levels)
+
+	2.1 Using business logic
+	2.2 Using frequency or response rate 
+
+3. Dummy Coding  "One hot encoder" -(commonly used method for converting a categorical input variable into continuous variable.
+It increase number of features by levels of categorical variables)	
+
+OneHotEncoder vs Label encoder:
+
+- The problem here is since there are different numbers in the same column, 
+the model will misunderstand the data to be in some kind of order, 0 < 1 <2.
+
+- The model may derive a correlation like as the country number increases the population 
+increases but this clearly may not 
+be the scenario in some other data or the prediction set. 
+To overcome this problem, we use One Hot Encoder.
+
+'''
+
+# OneHotEncoder for categorical data
+categoric_data = pd.get_dummies(categoric_data)
+
+# Dealing with outliers
+'''
+'age', 'duration', 'campaign', 'pdays', 'previous', 'emp.var.rate',
+       'cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed'],
+      dtype='object'
+'''
+numeric_data.boxplot(column = numeric_data.columns.values.tolist())
+
+column_name = 'duration'
+z = np.abs(stats.zscore(numeric_data[column_name]))
+
+threshold = 6
+input_array = np.array(np.where(z > threshold))
+
+numeric_data[column_name].ix[numeric_data.index.isin(input_array[0])]
+
+
+
+
+
+
+
+
 
 
 
