@@ -4,6 +4,12 @@ from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 from scipy import stats
+from sklearn.preprocessing import MinMaxScaler
+from sklearn import preprocessing 
+from sklearn.model_selection import train_test_split
+import seaborn as sns
+import matplotlib.pyplot as plt; plt.rcdefaults()
+import matplotlib.pyplot as plt
 
 #%% 1. Read source data from file, and separate as categorical and numerical data
 bank_marketing = pd.read_csv("../Data/master-data/bank-additional.csv", sep = ";")
@@ -38,7 +44,9 @@ numeric_data['nr.employed'].value_counts() # Value no in row 760 is categoric an
 
 nr_employeed_mode = numeric_data['nr.employed'].mode()
 
+numeric_data[numeric_data['nr.employed'] == 'no'].index.values # row 780
 numeric_data['nr.employed'] = numeric_data['nr.employed'].replace('no', float(nr_employeed_mode[0])) 
+# just to check
 numeric_data[numeric_data['nr.employed'] == 'no'].index.values
 # Menjam tip podataka za kolonu nr.employed
 numeric_data = numeric_data.astype({'nr.employed': 'float64'})
@@ -150,6 +158,9 @@ imputed_housing_missing_values['housing'] = imputed_housing_missing_values['hous
 # Impute predicted data into original dataset
 categoric_data.loc[imputed_housing_missing_values.index.values, 'housing'] = imputed_housing_missing_values.loc[:,'housing'] # impute to original data set
 
+# Check imputation results
+categoric_data['housing'].value_counts()
+
 # Loan imputation section
 indexes_not_missing_loan_values = categoric_data[categoric_data['loan'] != 'unknown'].index.values
 x_loan_train = numeric_data[numeric_data.index.isin(indexes_not_missing_loan_values)]
@@ -170,6 +181,8 @@ imputed_loan_missing_values['loan'] = imputed_loan_missing_values['loan'].map(la
 # Impute predicted data into original dataset
 categoric_data.loc[imputed_loan_missing_values.index.values, 'loan'] = imputed_loan_missing_values.loc[:,'loan']
 
+# Check imputation results 
+categoric_data['loan'].value_counts()
 
 # Column Education (threat unknown data as another category, because some people don't want to give informations about education, and that can be some pattern latter) MNAR (Missing Not At Random)
 
@@ -207,29 +220,88 @@ To overcome this problem, we use One Hot Encoder.
 # OneHotEncoder for categorical data
 categoric_data = pd.get_dummies(categoric_data)
 
-# Dealing with outliers
+# Dealing with outliers -- USE COMMON SENSE
 '''
-'age', 'duration', 'campaign', 'pdays', 'previous', 'emp.var.rate',
-       'cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed'],
-      dtype='object'
+'age', --> min 18 max 88 (this is ok)
+'duration', min 0 (ok) and max value 
+'campaign', min 1 max(ok) 35 (ok)
+'pdays', min -1 (ok) max 21 (ok)
+'previous', min 0 (ok) max 6 (ok)
+'emp.var.rate', --> varijacija stope nezaposlenosti min -3.4 max 1.4, OK
+'cons.price.idx', --> index potrosackih cena - min 92.201 max 94.767
+'cons.conf.idx', https://www.nbs.rs/internet/latinica/glossary.html?id_letter=10&jezik=1 (one outlier more than 7 std) row 780
+'euribor3m', Euro Interbank Offered Rate --> https://www.nlb.me/me/stanovnistvo/savjeti/sta-je-euribor row 780 (64 std)
+'nr.employed' no rows onver 3std
 '''
 numeric_data.boxplot(column = numeric_data.columns.values.tolist())
+numeric_data.boxplot(column = ['euribor3m'])
 
-column_name = 'duration'
+column_name = 'euribor3m'
 z = np.abs(stats.zscore(numeric_data[column_name]))
 
-threshold = 6
+threshold = 3
 input_array = np.array(np.where(z > threshold))
 
 numeric_data[column_name].ix[numeric_data.index.isin(input_array[0])]
 
+df_outliers = pd.DataFrame([], columns = ['OutliersCount', 'ColumnName'], index = None )
+#df_outliers.set_index('ColumnName', inplace=True)
 
 
 
+for column in numeric_data.columns:
+	zsc = np.abs(stats.zscore(numeric_data[column]))
+	input_array_zsc = np.array(np.where(zsc > threshold))
+	outliers = numeric_data[column].ix[numeric_data.index.isin(input_array_zsc[0])]
+	df_outliers = df_outliers.append({'OutliersCount' : len(outliers) , 'ColumnName' : column} , ignore_index=True)
+
+# Drop row 780
+numeric_data = numeric_data.drop(780)
+categoric_data = categoric_data.drop(780)
+
+# Check corellation for data (Pearson coefficient)
+corr1 = numeric_data.corr()
+
+plt.subplots(figsize=(15,11))
+sns.heatmap(corr1, 
+            xticklabels=corr1.columns.values,
+            yticklabels=corr1.columns.values,
+			cmap='RdBu_r',
+			annot=True,
+			linewidth=2)
 
 
+sns.heatmap()
+
+corr1.style.background_gradient(cmap='coolwarm')
 
 
+plt.bar(df_outliers['ColumnName'],df_outliers['OutliersCount'], width=0.2)
+
+ax = df_outliers.plot(kind='bar')
+x_labels = df_outliers.index.strftime('%b')
+ax.set_xticklabels(x_labels)
+
+plt.show()
 
 
+# Display BAR diagram for outliers description
+objects = df_outliers['ColumnName'].values
+y_pos = np.arange(len(objects))
+performance = df_outliers['OutliersCount'].values
 
+plt.bar(y_pos, performance, align='center', alpha=0.5)
+plt.xticks(y_pos, objects, rotation=75)
+plt.ylabel('Outliers count')
+plt.title('Outliers by column')
+
+plt.show()
+
+# Concate data 
+data = pd.concat([numeric_data, categoric_data], axis=1, sort=False)
+
+# Normalization standard scaler
+data_scaled = pd.DataFrame(data = preprocessing.scale(data), columns = data.columns.values)
+
+# Split data 
+train, test = train_test_split(data_scaled, test_size=0.2)
