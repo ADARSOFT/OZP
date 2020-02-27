@@ -43,5 +43,9 @@ When should drop outliers
 https://www.theanalysisfactor.com/outliers-to-drop-or-not-to-drop/
 https://humansofdata.atlan.com/2018/03/when-delete-outliers-dataset/
 
-
+PCA
+https://towardsdatascience.com/why-feature-correlation-matters-a-lot-847e8ba439c4
+https://towardsdatascience.com/an-approach-to-choosing-the-number-of-components-in-a-principal-component-analysis-pca-3b9f3d6e73fe
+https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+https://jakevdp.github.io/PythonDataScienceHandbook/05.09-principal-component-analysis.html
 

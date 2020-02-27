@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 import seaborn as sns
 import matplotlib.pyplot as plt; plt.rcdefaults()
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
 #%% 1. Read source data from file, and separate as categorical and numerical data
 bank_marketing = pd.read_csv("../Data/master-data/bank-additional.csv", sep = ";")
@@ -260,42 +261,36 @@ numeric_data = numeric_data.drop(780)
 categoric_data = categoric_data.drop(780)
 
 # Check corellation for data (Pearson coefficient)
-corr1 = numeric_data.corr()
 
-plt.subplots(figsize=(15,11))
-sns.heatmap(corr1, 
-            xticklabels=corr1.columns.values,
-            yticklabels=corr1.columns.values,
-			cmap='RdBu_r',
-			annot=True,
-			linewidth=2)
+def displayCorrelationMatrix(numeric_data_p):
+	
+	corr1 = numeric_data_p.corr()
+	
+	plt.subplots(figsize=(15,11))
+	sns.heatmap(corr1, 
+	            xticklabels=corr1.columns.values,
+	            yticklabels=corr1.columns.values,
+				cmap='RdBu_r',
+				annot=True,
+				linewidth=2)
 
-
-sns.heatmap()
-
-corr1.style.background_gradient(cmap='coolwarm')
-
-
-plt.bar(df_outliers['ColumnName'],df_outliers['OutliersCount'], width=0.2)
-
-ax = df_outliers.plot(kind='bar')
-x_labels = df_outliers.index.strftime('%b')
-ax.set_xticklabels(x_labels)
-
-plt.show()
-
+displayCorrelationMatrix(numeric_data)
 
 # Display BAR diagram for outliers description
-objects = df_outliers['ColumnName'].values
-y_pos = np.arange(len(objects))
-performance = df_outliers['OutliersCount'].values
+def displayBarChartForOutliers(df_with_outliers, y_label_name, title_name, y_axis_column_name, x_axis_column_name):
+	
+	y_axis = df_with_outliers[y_axis_column_name].values
+	y_pos = np.arange(len(y_axis))
+	x_axis = df_with_outliers[x_axis_column_name].values
 
-plt.bar(y_pos, performance, align='center', alpha=0.5)
-plt.xticks(y_pos, objects, rotation=75)
-plt.ylabel('Outliers count')
-plt.title('Outliers by column')
+	plt.bar(y_pos, x_axis, align='center', alpha=0.5)
+	plt.xticks(y_pos, y_axis, rotation=75)
+	plt.ylabel(y_label_name)
+	plt.title(title_name)
+	
+	plt.show()
 
-plt.show()
+displayBarChartForOutliers(df_outliers, 'Outliers count', 'Outliers by columns', 'ColumnName', 'OutliersCount')
 
 # Concate data 
 data = pd.concat([numeric_data, categoric_data], axis=1, sort=False)
@@ -304,4 +299,51 @@ data = pd.concat([numeric_data, categoric_data], axis=1, sort=False)
 data_scaled = pd.DataFrame(data = preprocessing.scale(data), columns = data.columns.values)
 
 # Split data 
-train, test = train_test_split(data_scaled, test_size=0.2)
+train, test = train_test_split(data_scaled, test_size=0.3)
+
+# PCA analysis
+
+def displayPCAVariationPlot(p):
+	plt.figure()
+	plt.plot(np.cumsum(p.explained_variance_ratio_))
+	plt.xlabel('Number of Components')
+	plt.ylabel('Variance (%)') #for each component
+	plt.title('Pulsar Dataset Explained Variance')
+	plt.show()
+
+# Data before reduction with all possible components
+pca_all = PCA().fit(train)
+
+displayPCAVariationPlot(pca_all)
+
+print("Total variance percentage: {}%".format(pca_all.explained_variance_ratio_.sum()))
+
+print("Total number of components: {}".format(len(pca_all.explained_variance_ratio_)))
+
+# Data with 98% percent of components variation
+pca_98_percent = PCA(0.98).fit(train)
+
+displayPCAVariationPlot(pca_98_percent)
+
+print("Total variance percentage: {}%".format(pca_98_percent.explained_variance_ratio_.sum()))
+
+components_number_98_per_variance = len(pca_98_percent.explained_variance_ratio_)
+
+print("Total number of components: {}".format(components_number_98_per_variance))
+
+# Transform data with PCA (reduce dimensionality)
+
+pca = PCA(n_components = components_number_98_per_variance)
+data_pca_transformed = pca.fit_transform(train).copy()
+data_pca_transformed.shape
+
+
+
+
+
+
+
+
+
+
+
