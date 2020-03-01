@@ -296,16 +296,30 @@ def displayBarChartForOutliers(df_with_outliers, y_label_name, title_name, y_axi
 
 displayBarChartForOutliers(df_outliers, 'Outliers count', 'Outliers by columns', 'ColumnName', 'OutliersCount')
 
-# Concate data 
+# Concatenate data 
 data = pd.concat([numeric_data, categoric_data], axis=1, sort=False)
 
 from sklearn.feature_selection import VarianceThreshold
 sel = VarianceThreshold(threshold=(1- 0.98))
 new_data = sel.fit_transform(data).shape
 
-#%% Normalization standard scaler
+#%% Normalization standard scaler (x - mean) / std
+
+scaler = StandardScaler()
+scaler.fit_transform(data)
 
 data_scaled = pd.DataFrame(data = preprocessing.scale(data), columns = data.columns.values)
+inverse_scaled = preprocessing.scale(data_scaled)
+# dokaz formule, ako su brojevi ispod proseka bice u minusu, i zavisi od standardne devijacije kolone koja ce vrednost biti. 
+# sto je standardna devijacija veca (delilac), to ce skalirana vrednost biti manja
+
+
+std_of_age = data.iloc[:,0:1].std()[0]
+mean_of_age = data.iloc[:, 0:1].mean()[0]
+x_age_row_0 = data.iloc[0:1, 0:1].values[0][0]
+
+age_scaled_row_0 = (x_age_row_0 - mean_of_age) / std_of_age
+age_scaled_row_0_scaled = data_scaled.iloc[0:1, 0:1].values[0][0]
 
 #%%  Split data 
 
@@ -363,8 +377,9 @@ original_data_test.shape
 my_dataframe = pd.DataFrame(train_data_pca_transformed_test)
 my_datafeame2 = pd.DataFrame(original_data_test)
 
-#%% Kreirajte klaster model, i odredite klastere svake instance
+#%% Kreirajte klaster model, i odredite klastere svake instance. Karakterisite dobijene klastere. 
 
+# trazim optimalan broj klastera
 def calculateSilhoueteIndexForClusters(max_clusters):	
 	
 	silhouette_idex_array = np.array([])
@@ -387,8 +402,50 @@ def calculateSilhoueteIndexForClusters(max_clusters):
 
 calculateSilhoueteIndexForClusters(60)
 
-# But for simplicity we will choose only 3 clusters 
+# But for simplicity we will choose small number of clusters
+cluster_n = 4
+cluster_result = KMeans(n_clusters = cluster_n, init = 'k-means++', max_iter = 300, n_init = 10, random_state = 0, n_jobs =-1).fit(data_scaled)
+
+clusters_ratio = np.unique(cluster_result.labels_, return_counts = True) 
+
+centers_df = pd.DataFrame(cluster_result.cluster_centers_, columns = train.columns)
+centers_df.head(cluster_n)
+
+def displayCentersCountPlotBarChart(centers_counts, centers_index):
+	fig, ax = plt.subplots()
+	plt.bar(centers_index, centers_counts)
+	plt.xlabel('Klaster')
+	plt.ylabel('Ukupan broj instanci')
+	plt.title('Odnos ukupnog broja instanci po klasteru')
+	plt.show()
+	
+displayCentersCountPlotBarChart(clusters_ratio[1], clusters_ratio[0])
+
+# Spojiti dataset sa labelama klastera
+labels_df = pd.DataFrame(cluster_result.labels_, columns = ['Cluster'])
+
+data_scaled_labeled = pd.concat([data_scaled, labels_df], axis=1, sort=False)
+
+# Prikazati statistiku po klasteru
+def getDescriptionForClusters(data_scaled_labeled_p, cluster_number, cluster_centers):
+	
+	clusters_description = pd.DataFrame([])
+	
+	for i in range(cluster_number):
+		desc_internal = data_scaled_labeled_p[data_scaled_labeled_p['Cluster'] == 1].describe()
+		desc_internal['Cluster'] = i
+		center = centers_df.iloc[i:i+1,:]
+		center['Cluster'] = i
+		desc_internal = desc_internal.append(center)
+		clusters_description = clusters_description.append(desc_internal)
+		
+	
+	return clusters_description
+
+desc_for_cluster = getDescriptionForClusters(data_scaled_labeled, 4, centers_df)
 
 
+
+len(cluster_result.labels_)
 
 #%% Create minimum 3 predictive models,  with 
