@@ -306,10 +306,12 @@ new_data = sel.fit_transform(data).shape
 #%% Normalization standard scaler (x - mean) / std
 
 scaler = StandardScaler()
-scaler.fit_transform(data)
+# koristim scaler objekat da bih kasnije mogao da radim inverse transform
+standard_scaler_transformed = scaler.fit_transform(data)
+# scaler.inverse_transform(standard_scaler_transformed)
 
-data_scaled = pd.DataFrame(data = preprocessing.scale(data), columns = data.columns.values)
-inverse_scaled = preprocessing.scale(data_scaled)
+data_scaled = pd.DataFrame(data = standard_scaler_transformed, columns = data.columns.values)
+inverse_scaled = scaler.inverse_transform(data_scaled)
 # dokaz formule, ako su brojevi ispod proseka bice u minusu, i zavisi od standardne devijacije kolone koja ce vrednost biti. 
 # sto je standardna devijacija veca (delilac), to ce skalirana vrednost biti manja
 
@@ -404,11 +406,13 @@ calculateSilhoueteIndexForClusters(60)
 
 # But for simplicity we will choose small number of clusters
 cluster_n = 4
-cluster_result = KMeans(n_clusters = cluster_n, init = 'k-means++', max_iter = 300, n_init = 10, random_state = 0, n_jobs =-1).fit(data_scaled)
 
-clusters_ratio = np.unique(cluster_result.labels_, return_counts = True) 
+# Fit
+cluster_model = KMeans(n_clusters = cluster_n, init = 'k-means++', max_iter = 300, n_init = 10, random_state = 0, n_jobs =-1).fit(data_scaled)
 
-centers_df = pd.DataFrame(cluster_result.cluster_centers_, columns = train.columns)
+clusters_ratio = np.unique(cluster_model.labels_, return_counts = True) 
+
+centers_df = pd.DataFrame(cluster_model.cluster_centers_, columns = train.columns)
 centers_df.head(cluster_n)
 
 def displayCentersCountPlotBarChart(centers_counts, centers_index):
@@ -422,30 +426,54 @@ def displayCentersCountPlotBarChart(centers_counts, centers_index):
 displayCentersCountPlotBarChart(clusters_ratio[1], clusters_ratio[0])
 
 # Spojiti dataset sa labelama klastera
-labels_df = pd.DataFrame(cluster_result.labels_, columns = ['Cluster'])
+labels_df = pd.DataFrame(cluster_model.labels_, columns = ['Cluster'])
 
 data_scaled_labeled = pd.concat([data_scaled, labels_df], axis=1, sort=False)
 
+
+
 # Prikazati statistiku po klasteru
+
+def returnInverseTransformedData(data_scaled_labeled_p):
+	features = data_scaled_labeled_p.iloc[:,:-1]
+	lbl = pd.DataFrame(data_scaled_labeled_p.iloc[:,-1], columns = ['Cluster']) 
+	
+	inverse_transformed_data = pd.DataFrame(scaler.inverse_transform(features), columns = features.columns)
+	inverse_transformed_data['Cluster'] = lbl.iloc[:,-1]
+	return inverse_transformed_data
+
+inverse_transfomed_data = returnInverseTransformedData(data_scaled_labeled)
+
 def getDescriptionForClusters(data_scaled_labeled_p, cluster_number, cluster_centers):
 	
 	clusters_description = pd.DataFrame([])
 	
 	for i in range(cluster_number):
-		desc_internal = data_scaled_labeled_p[data_scaled_labeled_p['Cluster'] == 1].describe()
+		
+		desc_internal = data_scaled_labeled_p[data_scaled_labeled_p['Cluster'] == i].describe()
 		desc_internal['Cluster'] = i
 		center = centers_df.iloc[i:i+1,:]
 		center['Cluster'] = i
 		desc_internal = desc_internal.append(center)
 		clusters_description = clusters_description.append(desc_internal)
 		
-	
 	return clusters_description
 
-desc_for_cluster = getDescriptionForClusters(data_scaled_labeled, 4, centers_df)
+desc_for_cluster = getDescriptionForClusters(inverse_transfomed_data, 4, centers_df)
 
+def showScatterPlotForSomeColumnsMax4Clusters(labels, features, first_column_name, second_column_name):
+	
+	cluster_map = {0:'g', 1:'b', 2:'r', 3:'y'}
+	cluster_color = [cluster_map[i] for i in labels]
+	plt.close()
+	plt.xlabel(first_column_name)
+	plt.ylabel(second_column_name)
+	plt.title('Cluster distributions by colors')
+	plt.scatter(features.loc[:,first_column_name], features.loc[:,second_column_name], c = cluster_color, label = labels)
+	
 
-
-len(cluster_result.labels_)
-
+# Call Scatter plots for different column combinations
+showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'campaign')
+showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'emp.var.rate')
+showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'nr.employed')
 #%% Create minimum 3 predictive models,  with 
