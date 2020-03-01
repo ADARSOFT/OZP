@@ -263,6 +263,7 @@ for column in numeric_data.columns:
 # Drop row 780
 numeric_data = numeric_data.drop(780)
 categoric_data = categoric_data.drop(780)
+label = label.drop(780)
 
 # Check corellation for data (Pearson coefficient)
 
@@ -325,7 +326,7 @@ age_scaled_row_0_scaled = data_scaled.iloc[0:1, 0:1].values[0][0]
 
 #%%  Split data 
 
-train, test = train_test_split(data_scaled, test_size=0.3)
+X_train, X_test, Y_train, Y_test = train_test_split(data_scaled, label, test_size=0.3)
 
 #%% PCA analysis
 
@@ -338,7 +339,7 @@ def displayPCAVariationPlot(p):
 	plt.show()
 
 # Data before reduction with all possible components
-pca_all = PCA().fit(train)
+pca_all = PCA().fit(X_train)
 
 displayPCAVariationPlot(pca_all)
 
@@ -347,7 +348,7 @@ print("Total variance percentage: {}%".format(pca_all.explained_variance_ratio_.
 print("Total number of components: {}".format(len(pca_all.explained_variance_ratio_)))
 
 # Data with 98% percent of components variation
-pca_98_percent = PCA(0.98).fit(train)
+pca_98_percent = PCA(0.98).fit(X_train)
 
 displayPCAVariationPlot(pca_98_percent)
 
@@ -361,15 +362,15 @@ print("Total number of components: {}".format(components_number_98_per_variance)
 
 pca = PCA(n_components = components_number_98_per_variance)
 
-pca_transformed_variance_ratio = pd.DataFrame(pca.fit(train).explained_variance_ratio_*100, columns = ['Variance_ratio_%'])
+pca_transformed_variance_ratio = pd.DataFrame(pca.fit(X_train).explained_variance_ratio_*100, columns = ['Variance_ratio_%'])
 print(pca_transformed_variance_ratio)
 print('Total variance percentage: {} %'.format(pca_transformed_variance_ratio.sum()[0]))
 
-train_data_pca_transformed = pca.fit_transform(train).copy()
+train_data_pca_transformed = pca.fit_transform(X_train).copy()
 
 #%% vezbanje PCA
-train_data_pca_transformed_test = pca.fit(train)
-train_data_pca_transformed_test = pca.transform(train)
+train_data_pca_transformed_test = pca.fit(X_train)
+train_data_pca_transformed_test = pca.transform(X_train)
 original_data_test = pca.inverse_transform(train_data_pca_transformed_test)
 
 train_data_pca_transformed.shape
@@ -412,7 +413,7 @@ cluster_model = KMeans(n_clusters = cluster_n, init = 'k-means++', max_iter = 30
 
 clusters_ratio = np.unique(cluster_model.labels_, return_counts = True) 
 
-centers_df = pd.DataFrame(cluster_model.cluster_centers_, columns = train.columns)
+centers_df = pd.DataFrame(cluster_model.cluster_centers_, columns = X_train.columns)
 centers_df.head(cluster_n)
 
 def displayCentersCountPlotBarChart(centers_counts, centers_index):
@@ -476,4 +477,24 @@ def showScatterPlotForSomeColumnsMax4Clusters(labels, features, first_column_nam
 showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'campaign')
 showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'emp.var.rate')
 showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'nr.employed')
-#%% Create minimum 3 predictive models,  with 
+showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'previous')
+
+#%% Kreirati minimalno 3 prediktivna modela  (sa default parametrima) uporeditw ih kros validacijom i ocenite gresku na test setu 
+# Minimum 2 mere evaluacije. Koristiti Pipeline
+
+'''
+Logistic Regression
+Decision Tree
+Naive Bayes
+'''
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+
+clf = DecisionTreeClassifier(random_state=0)
+clf_model = clf.fit(X_train,Y_train)
+clf_predict = clf.predict(X_test)
+
+cross_val_score(clf, X_train, Y_train, cv=10)
+
+
