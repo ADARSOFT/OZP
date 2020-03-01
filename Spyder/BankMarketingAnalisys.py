@@ -5,12 +5,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 from scipy import stats
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing 
 from sklearn.model_selection import train_test_split
 import seaborn as sns
 import matplotlib.pyplot as plt; plt.rcdefaults()
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.cluster import KMeans
+from sklearn import metrics
 
 #%% 1. Read source data from file, and separate as categorical and numerical data
 bank_marketing = pd.read_csv("../Data/master-data/bank-additional.csv", sep = ";")
@@ -295,20 +299,26 @@ displayBarChartForOutliers(df_outliers, 'Outliers count', 'Outliers by columns',
 # Concate data 
 data = pd.concat([numeric_data, categoric_data], axis=1, sort=False)
 
-# Normalization standard scaler
+from sklearn.feature_selection import VarianceThreshold
+sel = VarianceThreshold(threshold=(1- 0.98))
+new_data = sel.fit_transform(data).shape
+
+#%% Normalization standard scaler
+
 data_scaled = pd.DataFrame(data = preprocessing.scale(data), columns = data.columns.values)
 
-# Split data 
+#%%  Split data 
+
 train, test = train_test_split(data_scaled, test_size=0.3)
 
-# PCA analysis
+#%% PCA analysis
 
 def displayPCAVariationPlot(p):
 	plt.figure()
 	plt.plot(np.cumsum(p.explained_variance_ratio_))
 	plt.xlabel('Number of Components')
 	plt.ylabel('Variance (%)') #for each component
-	plt.title('Pulsar Dataset Explained Variance')
+	plt.title('Dataset Explained Variance')
 	plt.show()
 
 # Data before reduction with all possible components
@@ -334,16 +344,51 @@ print("Total number of components: {}".format(components_number_98_per_variance)
 # Transform data with PCA (reduce dimensionality)
 
 pca = PCA(n_components = components_number_98_per_variance)
-data_pca_transformed = pca.fit_transform(train).copy()
-data_pca_transformed.shape
+
+pca_transformed_variance_ratio = pd.DataFrame(pca.fit(train).explained_variance_ratio_*100, columns = ['Variance_ratio_%'])
+print(pca_transformed_variance_ratio)
+print('Total variance percentage: {} %'.format(pca_transformed_variance_ratio.sum()[0]))
+
+train_data_pca_transformed = pca.fit_transform(train).copy()
+
+#%% vezbanje PCA
+train_data_pca_transformed_test = pca.fit(train)
+train_data_pca_transformed_test = pca.transform(train)
+original_data_test = pca.inverse_transform(train_data_pca_transformed_test)
+
+train_data_pca_transformed.shape
+train_data_pca_transformed_test.shape
+original_data_test.shape
+
+my_dataframe = pd.DataFrame(train_data_pca_transformed_test)
+my_datafeame2 = pd.DataFrame(original_data_test)
+
+#%% Kreirajte klaster model, i odredite klastere svake instance
+
+def calculateSilhoueteIndexForClusters(max_clusters):	
+	
+	silhouette_idex_array = np.array([])
+	
+	for i in range(2,max_clusters):
+		kmeans_model = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0).fit(train_data_pca_transformed)
+		labels = kmeans_model.labels_
+		sil_idx =  metrics.silhouette_score(train_data_pca_transformed, labels, metric='euclidean')
+		silhouette_idex_array = np.append(silhouette_idex_array, sil_idx)
+
+		print('Iteration: {} , score: {}'.format(i,sil_idx))
+	
+	plt.figure()
+	plt.plot(silhouette_idex_array)
+	plt.xlabel('Cluster number')
+	plt.ylabel('Silhouette index') #for each component
+	plt.title('Optimal clusters - silhouette index by cluster')
+	plt.show()
+
+
+calculateSilhoueteIndexForClusters(60)
+
+# But for simplicity we will choose only 3 clusters 
 
 
 
-
-
-
-
-
-
-
-
+#%% Create minimum 3 predictive models,  with 

@@ -49,3 +49,16 @@ https://towardsdatascience.com/an-approach-to-choosing-the-number-of-components-
 https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 https://jakevdp.github.io/PythonDataScienceHandbook/05.09-principal-component-analysis.html
 
+
+PIPELINE 
+https://scikit-learn.org/stable/tutorial/statistical_inference/putting_together.html
+https://towardsdatascience.com/a-simple-example-of-pipeline-in-machine-learning-with-scikit-learn-e726ffbb6976
+https://scikit-learn.org/stable/modules/compose.html
+https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
+
+Clustering KMEANS
+https://scikit-learn.org/stable/modules/clustering.html#silhouette-coefficient
+
+Feature selection 
+https://scikit-learn.org/stable/modules/feature_selection.html
+
