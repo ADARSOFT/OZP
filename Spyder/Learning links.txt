@@ -62,3 +62,6 @@ https://scikit-learn.org/stable/modules/clustering.html#silhouette-coefficient
 Feature selection 
 https://scikit-learn.org/stable/modules/feature_selection.html
 
+Imbalanced data
+https://towardsdatascience.com/methods-for-dealing-with-imbalanced-data-5b761be45a18
+

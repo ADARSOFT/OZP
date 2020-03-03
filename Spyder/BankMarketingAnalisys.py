@@ -488,13 +488,25 @@ Decision Tree
 Naive Bayes
 '''
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_validate
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 
-clf = DecisionTreeClassifier(random_state=0)
-clf_model = clf.fit(X_train,Y_train)
-clf_predict = clf.predict(X_test)
+rf_alg = RandomForestClassifier(random_state=0, class_weight='balanced')
+rf_model = rf_alg.fit(X_train,Y_train)
 
-cross_val_score(clf, X_train, Y_train, cv=10)
+lr_alg = LogisticRegression(random_state=0, class_weight='balanced')
+lr_model = lr_alg.fit(X_train,Y_train)
+
+nb_alg = GaussianNB()
+nb_model = nb_alg.fit(X_train,Y_train)
+
+crossValidResult_randomForest = pd.DataFrame(cross_validate(rf_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+crossValidResult_logisticRegression = pd.DataFrame(cross_validate(lr_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
+crossValidResult_gaussianNB = pd.DataFrame(cross_validate(nb_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
+
+
 
 
