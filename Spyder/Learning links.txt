@@ -55,7 +55,8 @@ https://scikit-learn.org/stable/tutorial/statistical_inference/putting_together.
 https://towardsdatascience.com/a-simple-example-of-pipeline-in-machine-learning-with-scikit-learn-e726ffbb6976
 https://scikit-learn.org/stable/modules/compose.html
 https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
-
+https://scikit-learn.org/stable/modules/compose.html#combining-estimators
+	
 Clustering KMEANS
 https://scikit-learn.org/stable/modules/clustering.html#silhouette-coefficient
 

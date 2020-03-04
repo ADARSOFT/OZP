@@ -494,6 +494,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 
+pipeline_steps_lr = [('minMax', MinMaxScaler()), ('lr', LogisticRegression())] 
+pipe_lr = Pipeline(steps = pipeline_steps_lr)
+pipe_lr.set_params(lr__random_state=0)
+pipe_lr.set_params(lr__class_weight='balanced')
+
+
+
 rf_alg = RandomForestClassifier(random_state=0, class_weight='balanced')
 rf_model = rf_alg.fit(X_train,Y_train)
 
@@ -506,6 +513,9 @@ nb_model = nb_alg.fit(X_train,Y_train)
 crossValidResult_randomForest = pd.DataFrame(cross_validate(rf_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
 crossValidResult_logisticRegression = pd.DataFrame(cross_validate(lr_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
 crossValidResult_gaussianNB = pd.DataFrame(cross_validate(nb_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
+
+# Cross validate with pipeline
+crossValidResult_lr_pipe = pd.DataFrame(cross_validate(pipe_lr, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
 
 
 
