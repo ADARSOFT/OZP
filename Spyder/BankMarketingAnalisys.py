@@ -541,31 +541,107 @@ np.mean(cross_validation_result_rndf_pipe2)
 
 # Prvi nacin
 minmax_scaled_data_alg = MinMaxScaler()
-minmax_scaled_data = minmax_scaled_data_alg.fit_transform(data)
+minmax_scaled_data = pd.DataFrame(minmax_scaled_data_alg.fit_transform(data), columns = data.columns) 
 pca_98_percent_minmax_alg = PCA(0.98)
 pca_98_percent_minmax = pca_98_percent_minmax_alg.fit_transform(minmax_scaled_data)
 pca_98_percent_minmax.shape
 
-# Drugi nacin 
-from sklearn.feature_selection import SelectFromModel
+# Drugi nacin (vaznost atributa) - eksperiment
 from sklearn.ensemble import ExtraTreesClassifier
 
-alg_rndforest = ExtraTreesClassifier(random_state = 0, class_weight = 'balanced')
+alg_rndforest = RandomForestClassifier(random_state = 0, class_weight = 'balanced')
 alg_rndforest.fit(X_train, Y_train)
 dataframe = pd.DataFrame(alg_rndforest.feature_importances_)
 dataframe.index += 1
 dataframe_columns = pd.DataFrame(X_train.columns)
 dataframe_columns.index += 1
 
-t = pd.concat([dataframe, dataframe_columns], axis=1, sort=True)
-t.columns = ['FeatureImportance', 'FeatureName']
-t = t.sort_values(by = ['FeatureImportance'], ascending=False)
-t['CumSum'] = np.cumsum(t['FeatureImportance']).values
+varAnalisys = pd.concat([dataframe, dataframe_columns], axis=1, sort=True)
+varAnalisys.columns = ['FeatureImportance', 'FeatureName']
+varAnalisys = varAnalisys.sort_values(by = ['FeatureImportance'], ascending=False)
+varAnalisys['CumSumImportance'] = np.cumsum(varAnalisys['FeatureImportance']).values
 
-#%% Testirajte prediktivne modele koji kumulativno nose 98 % varijanse
+# Treci nacin rucno racunanje varijanse - eksperiment
+variance_dataframe = pd.DataFrame([], columns = ['Index','FeatureName','Variance']) 
+
+counter = 1
+for column in minmax_scaled_data.columns:
+	variance = minmax_scaled_data.loc[:,column].var()
+	variance_dataframe = variance_dataframe.append({'Index':counter,'FeatureName' : column, 'Variance' :variance}, ignore_index = True)
+	counter += 1
+
+total_variance = np.sum(variance_dataframe['Variance'].values)
+variance_dataframe['VariancePercentage'] = variance_dataframe['Variance'] /  total_variance
+sorted_variance = variance_dataframe.sort_values(by = ['VariancePercentage'], ascending=False)
+
+
+'''
 from sklearn.feature_selection import VarianceThreshold
 sel = VarianceThreshold(threshold=(1- 0.98))
 new_data = sel.fit_transform(data).shape
+'''
+
+#%% 10. Podelite inicijalni skup po klasterima koje ste dobili i sacuvajte ih u posebnim promenljivima. 
+# Na svakom od skupova. trenirajte jedan model i uporedite rezultate po razlicitim skupovima. 
+
+original_clustered_data = pd.concat([pd.DataFrame(scaler.inverse_transform(data_scaled), columns = data_scaled.columns), labels_df, label], axis=1, sort=False)
+X_train_new, X_test_new, Y_train_new, Y_test_new = train_test_split(original_clustered_data.iloc[:,:-1], original_clustered_data.iloc[:,-1], test_size=0.3)
+
+# Podeliti podatke
+original_cluster_0_data_x = X_train_new[X_train_new['Cluster'] == 0]
+original_cluster_0_data_y = pd.DataFrame(Y_train_new.ix[Y_train_new.index.isin(original_cluster_0_data_x.index)], columns = ['y'])        
+original_cluster_0_data_x = original_cluster_0_data_x.drop(780)
+original_cluster_0_data_y = original_cluster_0_data_y.drop(780)
+
+original_cluster_1_data_x = X_train_new[X_train_new['Cluster'] == 1]
+original_cluster_1_data_y = Y_train_new.ix[Y_train_new.index.isin(original_cluster_1_data_x.index)]
+
+original_cluster_2_data_x = X_train_new[X_train_new['Cluster'] == 2]
+original_cluster_2_data_y = Y_train_new.ix[Y_train_new.index.isin(original_cluster_2_data_x.index)]
+
+original_cluster_3_data_x = X_train_new[X_train_new['Cluster'] == 3]
+original_cluster_3_data_y = Y_train_new.ix[Y_train_new.index.isin(original_cluster_3_data_x.index)]
+
+scores = ['precision', 'recall','accuracy','f1']
+
+# Pipe za 0 klaster sa linearnom regresijom
+pipe_cluster0_steps = [('stancardScaler', StandardScaler()), ('pca', PCA()), ('lr', LogisticRegression())]
+
+pipe_cluster0_lr_pipe = Pipeline(steps = pipe_cluster0_steps)
+pipe_cluster0_lr_pipe.set_params(lr__random_state = 0)
+pipe_cluster0_lr_pipe.set_params(lr__class_weight = 'balanced')
+pipe_cluster0_lr_pipe.set_params(pca__n_components = 0.98) 
+
+cross_validation_cluster_0_pipe_result = pd.DataFrame(cross_validate(pipe_cluster0_lr_pipe, original_cluster_0_data_x, original_cluster_0_data_y, cv=10, n_jobs=-1, return_train_score=True, scoring = scores))
+np.mean(cross_validation_cluster_0_pipe_result)
+
+# Pipe za 1 klaster sa random forest prediktorom
+pipe_cluster1_steps = [('stancardScaler', StandardScaler()), ('pca', PCA()), ('rndf', RandomForestClassifier())]
+pipe_cluster1_rndf_pipe = Pipeline(steps = pipe_cluster1_steps)
+pipe_cluster1_rndf_pipe.set_params(rndf__random_state = 0)
+pipe_cluster1_rndf_pipe.set_params(rndf__class_weight = 'balanced')
+pipe_cluster1_rndf_pipe.set_params(pca__n_components = 0.98) 
+
+cross_validation_cluster_1_pipe_result = pd.DataFrame(cross_validate(pipe_cluster1_rndf_pipe, original_cluster_1_data_x, original_cluster_1_data_y, cv=10, n_jobs=-1, return_train_score=True, scoring = scores))
+np.mean(cross_validation_cluster_1_pipe_result)
+
+# Pipe za 2 klaster sa KNN 
+pipe_cluster2_steps = [('stancardScaler', StandardScaler()), ('pca', PCA()), ('knn', KNeighborsClassifier())]
+pipe_cluster2_rndf_pipe = Pipeline(steps = pipe_cluster2_steps)
+pipe_cluster2_rndf_pipe.set_params(pca__n_components = 0.98) 
+
+cross_validation_cluster_2_pipe_result = pd.DataFrame(cross_validate(pipe_cluster2_rndf_pipe, original_cluster_2_data_x, original_cluster_2_data_y, cv=10, n_jobs=-1, return_train_score=True, scoring = scores))
+np.mean(cross_validation_cluster_2_pipe_result)
+
+# Pipe za 3 klaster sa GaussianNB 
+
+pipe_cluster3_steps = [('stancardScaler', StandardScaler()), ('pca', PCA()), ('nb', GaussianNB())]
+pipe_cluster3_rndf_pipe = Pipeline(steps = pipe_cluster3_steps)
+pipe_cluster3_rndf_pipe.set_params(pca__n_components = 0.98) 
+
+cross_validation_cluster_3_pipe_result = pd.DataFrame(cross_validate(pipe_cluster3_rndf_pipe, original_cluster_3_data_x, original_cluster_3_data_y, cv=10, n_jobs=-1, return_train_score=True, scoring = scores))
+np.mean(cross_validation_cluster_3_pipe_result)
+
 
 '''
 pipe = Pipeline([

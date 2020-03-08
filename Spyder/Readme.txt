@@ -39,4 +39,15 @@ Koristite pipeline.
 9. Testirajte prediktivne modele na atributima koji kumulativno nose 98% varijanse.
 	- varijanta 1 (PCA)
 	- Pomocu ExtraTreesClassifier-a i propertija feature_importances_ dobio sam feature importance
-		
+10. Podelite inicijalni skup po klasterima koje ste dobili i sacuvajte ih u posebnim promenljivima. Na svakom od skupova. trenirajte jedan model 
+i uporedite rezultate po razlicitim skupovima. 
+	- Odradio
+11. Odgovorite na sledeca pitanja:
+	- Na kom podskupu dovijate najbolje performanse predikcije? 
+	- Kako se razlikuju predikcije na kompletnom test setu i na parcijalnim?
+	- Koji atributi imaju najvecu prediktivnu moc?
+	- Kako se razlikuju performanse modela sa optimizovanim parametrima u odnosu na modele sa default parametrima?
+	- Da li mislite da bi neka druga kombinacija bila bolja za vas dataset i zasto?
+	- Da li su vasi modeli pretrenirani (overfit)?
+12. Bonus: 
+	- Pronadjite podskup atributa koji maksimizuje performanse prediktivnih algoritama
