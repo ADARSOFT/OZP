@@ -107,10 +107,10 @@ numeric_data.isnull().sum()
   
 
 # Option 1
-categoric_data = categoric_data.dropna(axis='columns', how='all')
-numeric_data = numeric_data.dropna(axis='columns', how='all')
+categoric_data = categoric_data.dropna(axis='index', how='all')
+numeric_data = numeric_data.dropna(axis='index', how='all')
 
-# Check percentage of unglonow categorical nad 
+# Check percentage of unknown categorical data 
 categorical_data_missing_values = ['marital', 'education', 'default', 'housing', 'loan']
 data_len = len(categoric_data)
 
@@ -127,7 +127,7 @@ unknowns_categorical_data_percentages.head()
 print ('Column name: Null values percentage')
 
 for column in categoric_columns:
-	percentage_nan = categoric_data['marital'].isnull().value_counts() / data_len
+	percentage_nan = categoric_data[column].isnull().value_counts() / data_len
 	print('{}: {}%'.format(column, percentage_nan * 100))
 
 # Column MARITAL (small amount of unknown data, strategy : replace with most fraquent value)
@@ -138,7 +138,7 @@ categoric_data['marital'].value_counts()
 
 # Column DEFAULT (thread unknown data as another category, because of high unknown values percentage). Action DO NOTHING, cause values already have code value 'unknown'
 
-# Columns HOUSING and LOAN have high corellated UNKNOWN values and the same number. Conclusion this columns are MAR (Missing At Random). Decision is to use predictive model
+#%% Columns HOUSING and LOAN have high corellated UNKNOWN values and the same number. Conclusion this columns are MAR (Missing At Random). Decision is to use predictive model
 
 	# get known data for training
 categoric_data['housing'].value_counts() # possible values yes/no/unknown
@@ -193,6 +193,16 @@ categoric_data['loan'].value_counts()
 
 numeric_data['pdays'].value_counts() / len(numeric_data)
 
+#%%
+# 'age', 'duration', 'campaign', 'pdays', 'previous', 'emp.var.rate', 'cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed'
+
+sns.distplot(numeric_data['age']);
+sns.distplot(numeric_data['duration']);
+sns.distplot(numeric_data['campaign']);
+sns.distplot(numeric_data['emp.var.rate'])
+sns.distplot(numeric_data['previous'])
+sns.distplot(numeric_data['pdays'])
+
 #%% 3. Prepare dataset for predictive modeling 
 # Deal with categorical variables and prepare for predictive modeling
 
@@ -225,6 +235,9 @@ To overcome this problem, we use One Hot Encoder.
 # OneHotEncoder for categorical data
 categoric_data = pd.get_dummies(categoric_data)
 
+# Display pairplot
+sns.pairplot(numeric_data);
+
 # Dealing with outliers -- USE COMMON SENSE
 '''
 'age', --> min 18 max 88 (this is ok)
@@ -253,7 +266,6 @@ df_outliers = pd.DataFrame([], columns = ['OutliersCount', 'ColumnName'], index 
 #df_outliers.set_index('ColumnName', inplace=True)
 
 
-
 for column in numeric_data.columns:
 	zsc = np.abs(stats.zscore(numeric_data[column]))
 	input_array_zsc = np.array(np.where(zsc > threshold))
@@ -265,21 +277,6 @@ numeric_data = numeric_data.drop(780)
 categoric_data = categoric_data.drop(780)
 label = label.drop(780)
 
-# Check corellation for data (Pearson coefficient)
-
-def displayCorrelationMatrix(numeric_data_p):
-	
-	corr1 = numeric_data_p.corr()
-	
-	plt.subplots(figsize=(15,11))
-	sns.heatmap(corr1, 
-	            xticklabels=corr1.columns.values,
-	            yticklabels=corr1.columns.values,
-				cmap='RdBu_r',
-				annot=True,
-				linewidth=2)
-
-displayCorrelationMatrix(numeric_data)
 
 # Display BAR diagram for outliers description
 def displayBarChartForOutliers(df_with_outliers, y_label_name, title_name, y_axis_column_name, x_axis_column_name):
@@ -297,36 +294,32 @@ def displayBarChartForOutliers(df_with_outliers, y_label_name, title_name, y_axi
 
 displayBarChartForOutliers(df_outliers, 'Outliers count', 'Outliers by columns', 'ColumnName', 'OutliersCount')
 
+# Check corellation for data (Pearson coefficient)	
+def displayCorrelationMatrix(numeric_data_p):
+	
+	corr1 = numeric_data_p.corr()
+	
+	plt.subplots(figsize=(15,11))
+	sns.heatmap(corr1, 
+	            xticklabels=corr1.columns.values,
+	            yticklabels=corr1.columns.values,
+				cmap='RdBu_r',
+				annot=True,
+				linewidth=2)
+
+displayCorrelationMatrix(numeric_data)
+
+
 # Concatenate data 
 data = pd.concat([numeric_data, categoric_data], axis=1, sort=False)
 
-from sklearn.feature_selection import VarianceThreshold
-sel = VarianceThreshold(threshold=(1- 0.98))
-new_data = sel.fit_transform(data).shape
-
 #%% Normalization standard scaler (x - mean) / std
-
 scaler = StandardScaler()
 # koristim scaler objekat da bih kasnije mogao da radim inverse transform
 standard_scaler_transformed = scaler.fit_transform(data)
 # scaler.inverse_transform(standard_scaler_transformed)
 
 data_scaled = pd.DataFrame(data = standard_scaler_transformed, columns = data.columns.values)
-inverse_scaled = scaler.inverse_transform(data_scaled)
-# dokaz formule, ako su brojevi ispod proseka bice u minusu, i zavisi od standardne devijacije kolone koja ce vrednost biti. 
-# sto je standardna devijacija veca (delilac), to ce skalirana vrednost biti manja
-
-
-std_of_age = data.iloc[:,0:1].std()[0]
-mean_of_age = data.iloc[:, 0:1].mean()[0]
-x_age_row_0 = data.iloc[0:1, 0:1].values[0][0]
-
-age_scaled_row_0 = (x_age_row_0 - mean_of_age) / std_of_age
-age_scaled_row_0_scaled = data_scaled.iloc[0:1, 0:1].values[0][0]
-
-#%%  Split data 
-
-X_train, X_test, Y_train, Y_test = train_test_split(data_scaled, label, test_size=0.3)
 
 #%% PCA analysis
 
@@ -339,7 +332,7 @@ def displayPCAVariationPlot(p):
 	plt.show()
 
 # Data before reduction with all possible components
-pca_all = PCA().fit(X_train)
+pca_all = PCA().fit(data_scaled)
 
 displayPCAVariationPlot(pca_all)
 
@@ -348,7 +341,7 @@ print("Total variance percentage: {}%".format(pca_all.explained_variance_ratio_.
 print("Total number of components: {}".format(len(pca_all.explained_variance_ratio_)))
 
 # Data with 98% percent of components variation
-pca_98_percent = PCA(0.98).fit(X_train)
+pca_98_percent = PCA(0.98).fit(data_scaled)
 
 displayPCAVariationPlot(pca_98_percent)
 
@@ -362,15 +355,15 @@ print("Total number of components: {}".format(components_number_98_per_variance)
 
 pca = PCA(n_components = components_number_98_per_variance)
 
-pca_transformed_variance_ratio = pd.DataFrame(pca.fit(X_train).explained_variance_ratio_*100, columns = ['Variance_ratio_%'])
+pca_transformed_variance_ratio = pd.DataFrame(pca.fit(data_scaled).explained_variance_ratio_*100, columns = ['Variance_ratio_%'])
 print(pca_transformed_variance_ratio)
 print('Total variance percentage: {} %'.format(pca_transformed_variance_ratio.sum()[0]))
 
-train_data_pca_transformed = pca.fit_transform(X_train).copy()
+train_data_pca_transformed = pca.fit_transform(data_scaled).copy()
 
 #%% vezbanje PCA
-train_data_pca_transformed_test = pca.fit(X_train)
-train_data_pca_transformed_test = pca.transform(X_train)
+train_data_pca_transformed_test = pca.fit(data_scaled)
+train_data_pca_transformed_test = pca.transform(data_scaled)
 original_data_test = pca.inverse_transform(train_data_pca_transformed_test)
 
 train_data_pca_transformed.shape
@@ -380,6 +373,11 @@ original_data_test.shape
 my_dataframe = pd.DataFrame(train_data_pca_transformed_test)
 my_datafeame2 = pd.DataFrame(original_data_test)
 
+#%%  Split data 
+data_min_max_scaled = MinMaxScaler().fit_transform(data)
+
+X_train, X_test, Y_train, Y_test = train_test_split(data, label, test_size=0.3)
+
 #%% Kreirajte klaster model, i odredite klastere svake instance. Karakterisite dobijene klastere. 
 
 # trazim optimalan broj klastera
@@ -388,9 +386,9 @@ def calculateSilhoueteIndexForClusters(max_clusters):
 	silhouette_idex_array = np.array([])
 	
 	for i in range(2,max_clusters):
-		kmeans_model = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0).fit(train_data_pca_transformed)
+		kmeans_model = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0).fit(data_min_max_scaled)
 		labels = kmeans_model.labels_
-		sil_idx =  metrics.silhouette_score(train_data_pca_transformed, labels, metric='euclidean')
+		sil_idx =  metrics.silhouette_score(data_min_max_scaled, labels, metric='euclidean')
 		silhouette_idex_array = np.append(silhouette_idex_array, sil_idx)
 
 		print('Iteration: {} , score: {}'.format(i,sil_idx))
@@ -479,7 +477,7 @@ showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].val
 showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'nr.employed')
 showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].values, inverse_transfomed_data.iloc[:,:-1], 'age', 'previous')
 
-#%% Kreirati minimalno 3 prediktivna modela  (sa default parametrima) uporeditw ih kros validacijom i ocenite gresku na test setu 
+#%% 7. Kreirati minimalno 3 prediktivna modela  (sa default parametrima) uporeditw ih kros validacijom i ocenite gresku na test setu 
 # Minimum 2 mere evaluacije. Koristiti Pipeline
 
 '''
@@ -519,4 +517,23 @@ crossValidResult_lr_pipe = pd.DataFrame(cross_validate(pipe_lr, X_train, Y_train
 
 
 
+#%% Testirajte prediktivne modele koji kumulativno nose 98 % varijanse
+from sklearn.feature_selection import VarianceThreshold
+sel = VarianceThreshold(threshold=(1- 0.98))
+new_data = sel.fit_transform(data).shape
 
+'''
+pipe = Pipeline([
+        ('scale', StandardScaler()),
+        ('reduce_dims', PCA(n_components=4)),
+        ('clf', SVC(kernel = 'linear', C = 1))])
+
+param_grid = dict(reduce_dims__n_components=[4,6,8],
+                  clf__C=np.logspace(-4, 1, 6),
+                  clf__kernel=['rbf','linear'])
+
+grid = GridSearchCV(pipe, param_grid=param_grid, cv=3, n_jobs=1, verbose=2, scoring= 'accuracy')
+grid.fit(X, y)
+print(grid.best_score_)
+print(grid.cv_results_)
+'''
