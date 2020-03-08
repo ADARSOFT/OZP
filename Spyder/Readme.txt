@@ -23,12 +23,20 @@
 	- Pretvaranje podataka iz kategorickih u numericke sam zavrsio pomocu tehnike dummy coding, funkcijom get_dummies(). Koristio sam tehniku dummy coding ispred Label encoding
 	kako ne bi doslo do pogresnih zakljucaka u linearnim modelima.
 	- Resavanje problema sa ekstremnim vrednostima. Koristio sam tehniku zscore. Prikazao sam zapise koji imaju vise od 3 standardne devijacije. Obrisao sam jedan red za koji sam 
-	smatrao da je outlier, ostale sam sacuvao. Gledajuci Distribucije tih kolona, zakljucio sam da nisu outlier-i vec da je distribucija podataka takva. 
+	smatrao da je outlier, ostale sam sacuvao. Gledajuci Distribucije tih kolona, zakljucio sam da nisu outlier-i vec da je distribucija podataka takva. Takodje sam prikazao box-plot
+	tehniku za nekoliko kolona. 
 	- Prikazao sam matricu korelacije i pairplot dijagram 
 	- Prikazao sam bar dijagram kako bih prikazao broj outlier-a po kolonama
 	
 4. Podeliti skup podataka na trening i test u odnosu 70:30
 
 5. Analizirajte glavne komponente skupa podataka
-	
+	- Analizirane su glavne komponente na 98% kumulativne varijanse i na 100%
+6. Kreirajte klaster model i odredite klastere svake instance. Karakterisite dobijene klastere
+7. Kreirajte minimalno 3 prediktivna modela (sa default parametrima), uporedite ih cross validacijom i ocenite gresku na test setu (minimum 2 mere evaluacije).
+Koristite pipeline.
+8. Promenite minimalno 2 parametra kod najboljeg modela i ocenite gresku na test setu.
+9. Testirajte prediktivne modele na atributima koji kumulativno nose 98% varijanse.
+	- varijanta 1 (PCA)
+	- Pomocu ExtraTreesClassifier-a i propertija feature_importances_ dobio sam feature importance
 		

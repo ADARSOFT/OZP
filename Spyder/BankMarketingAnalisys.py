@@ -251,20 +251,17 @@ sns.pairplot(numeric_data);
 'euribor3m', Euro Interbank Offered Rate --> https://www.nlb.me/me/stanovnistvo/savjeti/sta-je-euribor row 780 (64 std)
 'nr.employed' no rows onver 3std
 '''
-numeric_data.boxplot(column = numeric_data.columns.values.tolist())
-numeric_data.boxplot(column = ['euribor3m'])
 
-column_name = 'euribor3m'
-z = np.abs(stats.zscore(numeric_data[column_name]))
+# numeric_data.boxplot(column = numeric_data.columns.values.tolist())
+numeric_data.boxplot(column = ['age'])
+numeric_data.boxplot(column = ['duration'])
+numeric_data.boxplot(column = ['nr.employed'])
+numeric_data.boxplot(column = ['cons.conf.idx'])
+
 
 threshold = 3
-input_array = np.array(np.where(z > threshold))
-
-numeric_data[column_name].ix[numeric_data.index.isin(input_array[0])]
 
 df_outliers = pd.DataFrame([], columns = ['OutliersCount', 'ColumnName'], index = None )
-#df_outliers.set_index('ColumnName', inplace=True)
-
 
 for column in numeric_data.columns:
 	zsc = np.abs(stats.zscore(numeric_data[column]))
@@ -327,7 +324,7 @@ def displayPCAVariationPlot(p):
 	plt.figure()
 	plt.plot(np.cumsum(p.explained_variance_ratio_))
 	plt.xlabel('Number of Components')
-	plt.ylabel('Variance (%)') #for each component
+	plt.ylabel('Variance (%)')
 	plt.title('Dataset Explained Variance')
 	plt.show()
 
@@ -429,8 +426,6 @@ labels_df = pd.DataFrame(cluster_model.labels_, columns = ['Cluster'])
 
 data_scaled_labeled = pd.concat([data_scaled, labels_df], axis=1, sort=False)
 
-
-
 # Prikazati statistiku po klasteru
 
 def returnInverseTransformedData(data_scaled_labeled_p):
@@ -491,31 +486,81 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 
+def doCrossValidation(alg_):
+	return cross_validate(alg_, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])
+
+# Primer pipeline-a za logisticku regresiju
 pipeline_steps_lr = [('minMax', MinMaxScaler()), ('lr', LogisticRegression())] 
 pipe_lr = Pipeline(steps = pipeline_steps_lr)
-pipe_lr.set_params(lr__random_state=0)
-pipe_lr.set_params(lr__class_weight='balanced')
+pipe_lr.set_params(lr__random_state = 0)
+pipe_lr.set_params(lr__class_weight = 'balanced')
+cross_validation_result_lr_pipe = pd.DataFrame(cross_validate(pipe_lr, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+np.mean(cross_validation_result_lr_pipe)
 
+# Primer pipeline-a za cross validaciju sa naive bayes-om
+pipeline_steps_gnb = [('standardScaler', StandardScaler()), ('pca', PCA()), ('gnb', GaussianNB())]
+pipe_gnb = Pipeline(steps = pipeline_steps_gnb)
+cross_validation_result_gnb_pipe = pd.DataFrame(cross_validate(pipe_gnb, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+np.mean(cross_validation_result_gnb_pipe)
 
+# Primer pipeline-a za cross validaciju sa random forest algoritmom
+pipeline_steps_rndfr = [('minMax', MinMaxScaler()), ('rndf', RandomForestClassifier())]
+pipe_rndf = Pipeline(steps = pipeline_steps_rndfr)
+pipe_rndf.set_params(rndf__random_state = 0)
+pipe_rndf.set_params(rndf__class_weight = 'balanced')
+cross_validation_result_rndf_pipe = pd.DataFrame(cross_validate(pipe_rndf, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+np.mean(cross_validation_result_rndf_pipe)
 
-rf_alg = RandomForestClassifier(random_state=0, class_weight='balanced')
-rf_model = rf_alg.fit(X_train,Y_train)
+# Primer pipeline-a za cross validaciju sa random knn algoritmom
+pipeline_steps_knn = [('standardScaler', StandardScaler()), ('pca', PCA()), ('knn', KNeighborsClassifier())]
+pipe_knn = Pipeline(steps = pipeline_steps_knn)
+pipe_knn.set_params(knn__n_neighbors=3)
+cross_validation_results_knn_pipe = pd.DataFrame(cross_validate(pipe_knn, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+np.mean(cross_validation_results_knn_pipe)
 
-lr_alg = LogisticRegression(random_state=0, class_weight='balanced')
-lr_model = lr_alg.fit(X_train,Y_train)
+# Primer pipeline-a za cross validaciju sa decision three algoritmom
+pipeline_steps_dthree = [('minMax', MinMaxScaler()), ('dthree', DecisionTreeClassifier())]
+pipe_dthree = Pipeline(steps = pipeline_steps_dthree)
+pipe_dthree.set_params(dthree__class_weight = 'balanced')
+cross_validation_results_dthree = pd.DataFrame(doCrossValidation(pipe_dthree))
+np.mean(cross_validation_results_dthree)
 
-nb_alg = GaussianNB()
-nb_model = nb_alg.fit(X_train,Y_train)
+#%% 8. Promenite minimalno 2 parametra kod najboljeg modela i ocenite gresku na test setu.
+pipeline_steps_rndfr2 = [('minMax', MinMaxScaler()), ('rndf', RandomForestClassifier())]
+pipe_rndf2 = Pipeline(steps = pipeline_steps_rndfr2)
+pipe_rndf2.set_params(rndf__random_state = 0)
+pipe_rndf2.set_params(rndf__class_weight = 'balanced')
+pipe_rndf2.set_params(rndf__max_depth = 6)
+pipe_rndf2.set_params(rndf__n_estimators = 40)
+cross_validation_result_rndf_pipe2 = pd.DataFrame(cross_validate(pipe_rndf2, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+np.mean(cross_validation_result_rndf_pipe2)
 
-crossValidResult_randomForest = pd.DataFrame(cross_validate(rf_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
-crossValidResult_logisticRegression = pd.DataFrame(cross_validate(lr_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
-crossValidResult_gaussianNB = pd.DataFrame(cross_validate(nb_alg, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
+#%% 9. Testirajte prediktivne modele na atributima koji kumulativno nose 98% varijanse.
 
-# Cross validate with pipeline
-crossValidResult_lr_pipe = pd.DataFrame(cross_validate(pipe_lr, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])) 
+# Prvi nacin
+minmax_scaled_data_alg = MinMaxScaler()
+minmax_scaled_data = minmax_scaled_data_alg.fit_transform(data)
+pca_98_percent_minmax_alg = PCA(0.98)
+pca_98_percent_minmax = pca_98_percent_minmax_alg.fit_transform(minmax_scaled_data)
+pca_98_percent_minmax.shape
 
+# Drugi nacin 
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import ExtraTreesClassifier
 
+alg_rndforest = ExtraTreesClassifier(random_state = 0, class_weight = 'balanced')
+alg_rndforest.fit(X_train, Y_train)
+dataframe = pd.DataFrame(alg_rndforest.feature_importances_)
+dataframe.index += 1
+dataframe_columns = pd.DataFrame(X_train.columns)
+dataframe_columns.index += 1
+
+t = pd.concat([dataframe, dataframe_columns], axis=1, sort=True)
+t.columns = ['FeatureImportance', 'FeatureName']
+t = t.sort_values(by = ['FeatureImportance'], ascending=False)
+t['CumSum'] = np.cumsum(t['FeatureImportance']).values
 
 #%% Testirajte prediktivne modele koji kumulativno nose 98 % varijanse
 from sklearn.feature_selection import VarianceThreshold
