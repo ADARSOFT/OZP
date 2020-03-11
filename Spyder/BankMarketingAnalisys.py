@@ -661,6 +661,7 @@ from sklearn.feature_selection import RFE
 from sklearn.feature_selection import SelectKBest #, f_classif
 from sklearn.feature_selection import chi2
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.model_selection import GridSearchCV
 
 X_train_new_resampled, Y_train_new_resampled = sm.fit_resample(X_train_new, Y_train_new)
 
@@ -677,6 +678,16 @@ select_kbest_pipe.set_params(selKbest__score_func = chi2)
 select_kbest_pipe.set_params(selKbest__k = 50)
 select_kbest_pipe.set_params(rndf__random_state = 0)
 select_kbest_pipe.set_params(rndf__class_weight = 'balanced')
+
+param_grid = {
+    'selKbest__k': list(range(2, 60))
+}
+
+search = GridSearchCV(select_kbest_pipe, param_grid, n_jobs=-1)
+search.fit(X_train_new, Y_train_new)
+print("Best parameter (CV score=%0.3f):" % search.best_score_)
+print(search.best_params_)
+
 
 calc_result = cross_validate(select_kbest_pipe, X_train_new_resampled, Y_train_new_resampled, cv=10, n_jobs=-1, return_train_score=True, scoring = scores)
 cross_validation_kbest_pipe_result = pd.DataFrame(calc_result)
