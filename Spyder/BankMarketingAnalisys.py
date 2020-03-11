@@ -373,7 +373,9 @@ my_datafeame2 = pd.DataFrame(original_data_test)
 #%%  Split data 
 data_min_max_scaled = MinMaxScaler().fit_transform(data)
 
-X_train, X_test, Y_train, Y_test = train_test_split(data, label, test_size=0.3)
+x_data, x_forget_data, y_data, y_forget_data =  train_test_split(data, label, test_size=0.1)
+
+X_train, X_test, Y_train, Y_test = train_test_split(x_data, y_data, test_size=0.2)
 
 #%% Kreirajte klaster model, i odredite klastere svake instance. Karakterisite dobijene klastere. 
 
@@ -475,12 +477,6 @@ showScatterPlotForSomeColumnsMax4Clusters(inverse_transfomed_data.iloc[:,-1].val
 #%% 7. Kreirati minimalno 3 prediktivna modela  (sa default parametrima) uporeditw ih kros validacijom i ocenite gresku na test setu 
 # Minimum 2 mere evaluacije. Koristiti Pipeline
 
-'''
-Logistic Regression
-Decision Tree
-Naive Bayes
-'''
-from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -532,7 +528,7 @@ pipeline_steps_rndfr2 = [('minMax', MinMaxScaler()), ('rndf', RandomForestClassi
 pipe_rndf2 = Pipeline(steps = pipeline_steps_rndfr2)
 pipe_rndf2.set_params(rndf__random_state = 0)
 pipe_rndf2.set_params(rndf__class_weight = 'balanced')
-pipe_rndf2.set_params(rndf__max_depth = 6)
+pipe_rndf2.set_params(rndf__max_depth = 16)
 pipe_rndf2.set_params(rndf__n_estimators = 40)
 cross_validation_result_rndf_pipe2 = pd.DataFrame(cross_validate(pipe_rndf2, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
 np.mean(cross_validation_result_rndf_pipe2)
@@ -547,8 +543,6 @@ pca_98_percent_minmax = pca_98_percent_minmax_alg.fit_transform(minmax_scaled_da
 pca_98_percent_minmax.shape
 
 # Drugi nacin (vaznost atributa) - eksperiment
-from sklearn.ensemble import ExtraTreesClassifier
-
 alg_rndforest = RandomForestClassifier(random_state = 0, class_weight = 'balanced')
 alg_rndforest.fit(X_train, Y_train)
 dataframe = pd.DataFrame(alg_rndforest.feature_importances_)
@@ -585,13 +579,19 @@ new_data = sel.fit_transform(data).shape
 # Na svakom od skupova. trenirajte jedan model i uporedite rezultate po razlicitim skupovima. 
 
 original_clustered_data = pd.concat([pd.DataFrame(scaler.inverse_transform(data_scaled), columns = data_scaled.columns), labels_df, label], axis=1, sort=False)
+original_clustered_data = original_clustered_data.dropna(axis='rows', how='any')
+
 X_train_new, X_test_new, Y_train_new, Y_test_new = train_test_split(original_clustered_data.iloc[:,:-1], original_clustered_data.iloc[:,-1], test_size=0.3)
+Y_train_new.value_counts()
+
+from imblearn.over_sampling import SMOTE
+sm = SMOTE(random_state=42)
+
+#X_train_new, Y_train_new = sm.fit_resample(X_train_new, Y_train_new)
 
 # Podeliti podatke
 original_cluster_0_data_x = X_train_new[X_train_new['Cluster'] == 0]
 original_cluster_0_data_y = pd.DataFrame(Y_train_new.ix[Y_train_new.index.isin(original_cluster_0_data_x.index)], columns = ['y'])        
-original_cluster_0_data_x = original_cluster_0_data_x.drop(780)
-original_cluster_0_data_y = original_cluster_0_data_y.drop(780)
 
 original_cluster_1_data_x = X_train_new[X_train_new['Cluster'] == 1]
 original_cluster_1_data_y = Y_train_new.ix[Y_train_new.index.isin(original_cluster_1_data_x.index)]
@@ -642,19 +642,61 @@ pipe_cluster3_rndf_pipe.set_params(pca__n_components = 0.98)
 cross_validation_cluster_3_pipe_result = pd.DataFrame(cross_validate(pipe_cluster3_rndf_pipe, original_cluster_3_data_x, original_cluster_3_data_y, cv=10, n_jobs=-1, return_train_score=True, scoring = scores))
 np.mean(cross_validation_cluster_3_pipe_result)
 
+#%% 11. Odgovorite na sledeca pitanja:
+# 	- Na kom podskupu dobijate najbolje performanse predikcije? 
+#	Na drugom podskupu (klaster 1) koristeci random forest.
+
+#	- Kako se razlikuju predikcije na kompletnom test setu i na parcijalnim?
+#   Na parcijalnom setu (klaster 1) su dosta losiji rezultati
+
+#	- Koji atributi imaju najvecu prediktivnu moc?
+varAnalisys.head(10)
+ 
+#	- Kako se razlikuju performanse modela sa optimizovanim parametrima u odnosu na modele sa default parametrima?
+#	- Da li mislite da bi neka druga kombinacija bila bolja za vas dataset i zasto?
+#	- Da li su vasi modeli pretrenirani (overfit)?
+
+#%% BONUS: Pronadjite podskup atributa koji maksimizuje performanse prediktivnih algoritama. 
+from sklearn.feature_selection import RFE
+from sklearn.feature_selection import SelectKBest #, f_classif
+from sklearn.feature_selection import chi2
+from sklearn.ensemble import ExtraTreesClassifier
+
+X_train_new_resampled, Y_train_new_resampled = sm.fit_resample(X_train_new, Y_train_new)
+
+# Metod 1
+rfe = RFE(estimator=ExtraTreesClassifier(), n_features_to_select=1, step=1)
+rfe.fit(X_train_new, Y_train_new)
+rfe.ranking_
+
+# Metod 2
+
+select_kbest_pipe_steps = [('minMax', MinMaxScaler()), ('selKbest', SelectKBest()), ('rndf', RandomForestClassifier())] 
+select_kbest_pipe = Pipeline(steps = select_kbest_pipe_steps)
+select_kbest_pipe.set_params(selKbest__score_func = chi2)
+select_kbest_pipe.set_params(selKbest__k = 50)
+select_kbest_pipe.set_params(rndf__random_state = 0)
+select_kbest_pipe.set_params(rndf__class_weight = 'balanced')
+
+calc_result = cross_validate(select_kbest_pipe, X_train_new_resampled, Y_train_new_resampled, cv=10, n_jobs=-1, return_train_score=True, scoring = scores)
+cross_validation_kbest_pipe_result = pd.DataFrame(calc_result)
+np.mean(cross_validation_kbest_pipe_result)
 
 '''
-pipe = Pipeline([
-        ('scale', StandardScaler()),
-        ('reduce_dims', PCA(n_components=4)),
-        ('clf', SVC(kernel = 'linear', C = 1))])
-
-param_grid = dict(reduce_dims__n_components=[4,6,8],
-                  clf__C=np.logspace(-4, 1, 6),
-                  clf__kernel=['rbf','linear'])
-
-grid = GridSearchCV(pipe, param_grid=param_grid, cv=3, n_jobs=1, verbose=2, scoring= 'accuracy')
-grid.fit(X, y)
-print(grid.best_score_)
-print(grid.cv_results_)
+X_train_new_scaled = pd.DataFrame(MinMaxScaler().fit_transform(X_train_new), columns = X_train_new.columns)
+skb = SelectKBest(score_func=chi2, k = 50).fit(X_train_new_scaled, Y_train_new)
+print(skb.shape)
+k_best_column_names = skb.get_support(indices=True)
+features_df_new = X_train_new_scaled.iloc[:,k_best_column_names]
+type(features_df_new)
 '''
+
+
+
+
+
+
+
+
+
+

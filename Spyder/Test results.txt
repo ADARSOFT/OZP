@@ -1,0 +1,35 @@
+# Ceo skup podataka
+fit_time           0.434976
+score_time         0.025457
+test_precision     0.598983
+train_precision    1.000000
+test_recall        0.287500
+train_recall       1.000000
+test_accuracy      0.899379
+train_accuracy     1.000000
+test_f1            0.382815
+train_f1           1.000000
+
+# Promenjeni parametri
+fit_time           0.182890
+score_time         0.012254
+test_precision     0.601914
+train_precision    0.998614
+test_recall        0.303125
+train_recall       0.997569
+test_accuracy      0.900419
+train_accuracy     0.999576
+test_f1            0.398137
+train_f1           0.998087
+
+# Deo skupa podataka (cluster 1) imamo jako malo podataka 103 reda, pa su rezultati jako losi
+fit_time           0.121579
+score_time         0.016274
+test_precision     0.000000
+train_precision    1.000000
+test_recall        0.000000
+train_recall       1.000000
+test_accuracy      0.679091
+train_accuracy     1.000000
+test_f1            0.000000
+train_f1           1.000000
