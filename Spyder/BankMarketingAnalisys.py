@@ -58,7 +58,7 @@ numeric_data = numeric_data.astype({'nr.employed': 'float64'})
 numeric_data.dtypes
 
 # Show all possible values for categoric data 
-pd.value_counts(categoric_data.values.flatten())
+pd.DataFrame(pd.value_counts(categoric_data.values.flatten())).T
 
 # Datatypes
 numeric_data.info()
@@ -456,6 +456,7 @@ def getDescriptionForClusters(data_scaled_labeled_p, cluster_number, cluster_cen
 	return clusters_description
 
 desc_for_cluster = getDescriptionForClusters(inverse_transfomed_data, 4, centers_df)
+print(desc_for_cluster.head(36))
 
 def showScatterPlotForSomeColumnsMax4Clusters(labels, features, first_column_name, second_column_name):
 	
@@ -492,13 +493,13 @@ pipeline_steps_lr = [('minMax', MinMaxScaler()), ('lr', LogisticRegression())]
 pipe_lr = Pipeline(steps = pipeline_steps_lr)
 pipe_lr.set_params(lr__random_state = 0)
 pipe_lr.set_params(lr__class_weight = 'balanced')
-cross_validation_result_lr_pipe = pd.DataFrame(cross_validate(pipe_lr, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+cross_validation_result_lr_pipe = pd.DataFrame(doCrossValidation(pipe_lr))
 np.mean(cross_validation_result_lr_pipe)
 
 # Primer pipeline-a za cross validaciju sa naive bayes-om
 pipeline_steps_gnb = [('standardScaler', StandardScaler()), ('pca', PCA()), ('gnb', GaussianNB())]
 pipe_gnb = Pipeline(steps = pipeline_steps_gnb)
-cross_validation_result_gnb_pipe = pd.DataFrame(cross_validate(pipe_gnb, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+cross_validation_result_gnb_pipe = pd.DataFrame(doCrossValidation(pipe_gnb))
 np.mean(cross_validation_result_gnb_pipe)
 
 # Primer pipeline-a za cross validaciju sa random forest algoritmom
@@ -506,14 +507,14 @@ pipeline_steps_rndfr = [('minMax', MinMaxScaler()), ('rndf', RandomForestClassif
 pipe_rndf = Pipeline(steps = pipeline_steps_rndfr)
 pipe_rndf.set_params(rndf__random_state = 0)
 pipe_rndf.set_params(rndf__class_weight = 'balanced')
-cross_validation_result_rndf_pipe = pd.DataFrame(cross_validate(pipe_rndf, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+cross_validation_result_rndf_pipe = pd.DataFrame(doCrossValidation(pipe_rndf))
 np.mean(cross_validation_result_rndf_pipe)
 
 # Primer pipeline-a za cross validaciju sa random knn algoritmom
 pipeline_steps_knn = [('standardScaler', StandardScaler()), ('pca', PCA()), ('knn', KNeighborsClassifier())]
 pipe_knn = Pipeline(steps = pipeline_steps_knn)
 pipe_knn.set_params(knn__n_neighbors=3)
-cross_validation_results_knn_pipe = pd.DataFrame(cross_validate(pipe_knn, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1']))
+cross_validation_results_knn_pipe = pd.DataFrame(doCrossValidation(pipe_knn))
 np.mean(cross_validation_results_knn_pipe)
 
 # Primer pipeline-a za cross validaciju sa decision three algoritmom
@@ -569,12 +570,6 @@ variance_dataframe['VariancePercentage'] = variance_dataframe['Variance'] /  tot
 sorted_variance = variance_dataframe.sort_values(by = ['VariancePercentage'], ascending=False)
 
 
-'''
-from sklearn.feature_selection import VarianceThreshold
-sel = VarianceThreshold(threshold=(1- 0.98))
-new_data = sel.fit_transform(data).shape
-'''
-
 #%% 10. Podelite inicijalni skup po klasterima koje ste dobili i sacuvajte ih u posebnim promenljivima. 
 # Na svakom od skupova. trenirajte jedan model i uporedite rezultate po razlicitim skupovima. 
 
@@ -604,7 +599,7 @@ original_cluster_3_data_y = Y_train_new.ix[Y_train_new.index.isin(original_clust
 
 scores = ['precision', 'recall','accuracy','f1']
 
-# Pipe za 0 klaster sa linearnom regresijom
+# Pipe za 0 klaster sa logistickom regresijom
 pipe_cluster0_steps = [('stancardScaler', StandardScaler()), ('pca', PCA()), ('lr', LogisticRegression())]
 
 pipe_cluster0_lr_pipe = Pipeline(steps = pipe_cluster0_steps)
@@ -663,51 +658,51 @@ from sklearn.feature_selection import chi2
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import GridSearchCV
 
-X_train_new_resampled, Y_train_new_resampled = sm.fit_resample(X_train_new, Y_train_new)
+X_train_new_resampled, Y_train_new_resampled = sm.fit_resample(X_train_new.iloc[:,:-1], Y_train_new)
 
-# Metod 1
+# Metod 1 - Recursive feature elimination
 rfe = RFE(estimator=ExtraTreesClassifier(), n_features_to_select=1, step=1)
-rfe.fit(X_train_new, Y_train_new)
+rfe.fit(X_train_new.iloc[:,:-1], Y_train_new)
 rfe.ranking_
 
 # Metod 2
-
+# Podesavam defaultni pipe
 select_kbest_pipe_steps = [('minMax', MinMaxScaler()), ('selKbest', SelectKBest()), ('rndf', RandomForestClassifier())] 
 select_kbest_pipe = Pipeline(steps = select_kbest_pipe_steps)
 select_kbest_pipe.set_params(selKbest__score_func = chi2)
-select_kbest_pipe.set_params(selKbest__k = 50)
 select_kbest_pipe.set_params(rndf__random_state = 0)
 select_kbest_pipe.set_params(rndf__class_weight = 'balanced')
 
-param_grid = {
-    'selKbest__k': list(range(2, 60))
-}
+# podesavam parametre koje zelim da trazim 
+param_grid = [
+{ 
+	  'rndf__n_estimators': list(range(10,30,5)), 
+	  'selKbest__k': list(range(2, 60)), 
+	  'rndf__min_samples_leaf': list(range(1,4)),
+	  #'rndf__max_leaf_nodes': list(range(10,110,10))
+}]
 
+# pomocu grid search metode trazim najbolje parametre
 search = GridSearchCV(select_kbest_pipe, param_grid, n_jobs=-1)
-search.fit(X_train_new, Y_train_new)
+search.fit(X_train_new.iloc[:,:-1], Y_train_new)
 print("Best parameter (CV score=%0.3f):" % search.best_score_)
 print(search.best_params_)
 
+# setujem najbolje parametre
+select_kbest_pipe.set_params(selKbest__k = search.best_params_['selKbest__k'])
+select_kbest_pipe.set_params(rndf__n_estimators = search.best_params_['rndf__n_estimators'])
 
+# pokrecem cross validaciju
 calc_result = cross_validate(select_kbest_pipe, X_train_new_resampled, Y_train_new_resampled, cv=10, n_jobs=-1, return_train_score=True, scoring = scores)
 cross_validation_kbest_pipe_result = pd.DataFrame(calc_result)
 np.mean(cross_validation_kbest_pipe_result)
 
-'''
+
+# Izvlacim nazive kolona best_k
+best_k = search.best_params_['selKbest__k']
 X_train_new_scaled = pd.DataFrame(MinMaxScaler().fit_transform(X_train_new), columns = X_train_new.columns)
-skb = SelectKBest(score_func=chi2, k = 50).fit(X_train_new_scaled, Y_train_new)
-print(skb.shape)
-k_best_column_names = skb.get_support(indices=True)
-features_df_new = X_train_new_scaled.iloc[:,k_best_column_names]
-type(features_df_new)
-'''
-
-
-
-
-
-
-
-
-
+select_k_best = SelectKBest(score_func=chi2, k = best_k).fit(X_train_new_scaled, Y_train_new)
+k_best_column_mask = select_k_best.get_support(indices=True)
+features_df_new = X_train_new_scaled.iloc[:,k_best_column_mask]
+print(features_df_new.columns)
 
