@@ -13,3 +13,24 @@ train_f1           1.000000
 
 Posle optimizovanja parametara
 
+fit_time           0.169681
+score_time         0.009390
+test_precision     0.991500
+train_precision    0.999956
+test_recall        0.886434
+train_recall       0.991762
+test_accuracy      0.938945
+train_accuracy     0.995859
+test_f1            0.893745
+train_f1           0.995841
+
+fit_time           0.224666
+score_time         0.010089
+test_precision     0.990723
+train_precision    1.000000
+test_recall        0.887209
+train_recall       0.995773
+test_accuracy      0.938945
+train_accuracy     0.997887
+test_f1            0.892755
+train_f1           0.997882
