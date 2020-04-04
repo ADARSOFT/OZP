@@ -66,3 +66,18 @@ https://scikit-learn.org/stable/modules/feature_selection.html
 Imbalanced data
 https://towardsdatascience.com/methods-for-dealing-with-imbalanced-data-5b761be45a18
 
+Ensemble algorithms
+
+XGBoost: How it works, with an example.
+https://www.youtube.com/watch?v=OQKQHNCVf5k
+
+Jaroslaw Szymczak - Gradient Boosting in Practice: a deep dive into xgboost
+https://www.youtube.com/watch?v=s3VmuVPfu0s
+
+https://blog.statsbot.co/ensemble-learning-d1dcd548e936
+https://towardsdatascience.com/basic-ensemble-learning-random-forest-adaboost-gradient-boosting-step-by-step-explained-95d49d1e2725
+https://towardsdatascience.com/ensemble-methods-bagging-boosting-and-stacking-c9214a10a205?gi=89b0ec6fff5e
+https://www.toptal.com/machine-learning/ensemble-methods-machine-learning
+https://machinelearningmastery.com/gentle-introduction-xgboost-applied-machine-learning/
+https://github.com/dmlc/xgboost/tree/master/demo#machine-learning-challenge-winning-solutions
+https://homes.cs.washington.edu/~tqchen/2016/03/10/story-and-lessons-behind-the-evolution-of-xgboost.html
