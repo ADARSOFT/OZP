@@ -74,6 +74,7 @@ https://www.youtube.com/watch?v=OQKQHNCVf5k
 Jaroslaw Szymczak - Gradient Boosting in Practice: a deep dive into xgboost
 https://www.youtube.com/watch?v=s3VmuVPfu0s
 
+https://en.wikipedia.org/wiki/Ensemble_learning#Stacking
 https://blog.statsbot.co/ensemble-learning-d1dcd548e936
 https://towardsdatascience.com/basic-ensemble-learning-random-forest-adaboost-gradient-boosting-step-by-step-explained-95d49d1e2725
 https://towardsdatascience.com/ensemble-methods-bagging-boosting-and-stacking-c9214a10a205?gi=89b0ec6fff5e
