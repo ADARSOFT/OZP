@@ -20,6 +20,7 @@ from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold
+import time
 
 #%% Global configuration part
 
@@ -30,6 +31,7 @@ def doCrossValidation(alg_, X_train, Y_train):
 	return cross_validate(alg_, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])
 
 def kFoldMeanSquaredErrorHelper(X,y,pipe,folds = 10):
+	start_time = time.time()
 	kfold = KFold(folds, True, 1)
 	average_mse = 0
 	for train, test in kfold.split(X, y):
@@ -37,6 +39,7 @@ def kFoldMeanSquaredErrorHelper(X,y,pipe,folds = 10):
 		pred = [round(value) for value in pipe.predict(X.iloc[test,:])]
 		mse = sum((y.iloc[test] - pred)**2)/len(pred)
 		average_mse += mse
+	print(time.time()-start_time)
 	return average_mse/folds
 
 #%% Read and prepare data TIC-TAC-TOC set CLASSIFICATION
@@ -108,6 +111,21 @@ X_machine_data = prepared_machine_data.iloc[:,:-1]
 y_machine_data = prepared_machine_data.iloc[:,-1]
 
 X_mch_train, X_mch_test, y_mch_train, y_mch_test = train_test_split(X_machine_data, y_machine_data, test_size=test_size, random_state=seed)
+
+#%% Read and prepare data red wine REGRESSION
+red_wine_data = pd.read_csv("C:/Work/Repo_OZP/Data/kaggle/winequality-red.csv", sep = ",")
+X_red_wine_data = red_wine_data.iloc[:,:-1]
+y_red_wine_data = red_wine_data.iloc[:,-1]
+X_red_wine_data.info()
+
+X_rw_train, X_rw_test, y_rw_train, y_rw_test = train_test_split(X_red_wine_data, y_red_wine_data, test_size=test_size, random_state=seed)
+#%% Read and prepare data parkinson REGRESSION
+
+parkinson_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/parkinson/parkinsons_updrs.csv", sep = ",")
+X_parkinson_data = parkinson_data.iloc[:,:-1]
+y_parkinson_data = parkinson_data.iloc[:,-1]
+
+X_par_train, X_par_test, y_par_train, y_par_test = train_test_split(X_parkinson_data, y_parkinson_data, test_size=test_size, random_state=seed)
 
 #%% Read and prepare data CREDIT CARD FRAUD DETECTION - CLASSIFICATION
 credit_card_fraud_data = pd.read_csv("C:/Work/Repo_OZP/Data/kaggle/creditcard.csv", sep = ",")
@@ -204,6 +222,8 @@ airfoil_cv_results = pd.DataFrame(xgb.cv(dtrain=airfoil_data_dmatrix, params=xgb
 
 avg_mse_xgb_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, xgb_regressor_pipe)	
 avg_mse_xgb_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, xgb_regressor_pipe)	
+avg_mse_xgb_parkinson = kFoldMeanSquaredErrorHelper(X_par_train, y_par_train, xgb_regressor_pipe)	
+avg_mse_xgb_redwine = kFoldMeanSquaredErrorHelper(X_rw_train, y_rw_train, xgb_regressor_pipe)	
 
 
 #%%
@@ -229,6 +249,8 @@ rfc_mch_val_score = pd.DataFrame(cross_val_score(rfr_classifier_pipe, X_mch_trai
 
 avg_mse_rfc_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, rfr_classifier_pipe)	
 avg_mse_rfc_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, rfr_classifier_pipe)	
+avg_mse_rfc_parkinson = kFoldMeanSquaredErrorHelper(X_par_train, y_par_train, rfr_classifier_pipe)	
+avg_mse_rfc_redwine = kFoldMeanSquaredErrorHelper(X_rw_train, y_rw_train, rfr_classifier_pipe)	
 
 # ADABOOST CLASSIFIER
 
@@ -245,8 +267,11 @@ ab_result_iot = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_iot_train, 
 # ADABOOST REGRESSOR
 ab_regressor_pipe_steps = [('minMax', MinMaxScaler()), ('abRegressor', AdaBoostRegressor())] 
 ab_regressor_pipe = Pipeline(steps = ab_regressor_pipe_steps)
-avg_mse_rfc_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, ab_regressor_pipe)	
-avg_mse_rfc_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, ab_regressor_pipe)
+
+avg_mse_ab_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, ab_regressor_pipe)	
+avg_mse_ab_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, ab_regressor_pipe)
+avg_mse_ab_parkinson = kFoldMeanSquaredErrorHelper(X_par_train, y_par_train, ab_regressor_pipe)	
+avg_mse_ab_redwine = kFoldMeanSquaredErrorHelper(X_rw_train, y_rw_train, ab_regressor_pipe)
 
 # GRADIENT BOOSTING CLASSIFIER
 
@@ -261,7 +286,13 @@ gb_result_credit_card_fraud = pd.DataFrame(doCrossValidation(gb_classifier_pipe,
 gb_result_iot = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_iot_train, y_iot_train)).mean()
 
 # GRADIENT BOOSTING REGRESSOR
+gb_regressor_pipe_steps = [('minMax', MinMaxScaler()), ('gbRegressor', GradientBoostingRegressor())] 
+gb_regressor_pipe = Pipeline(steps = gb_regressor_pipe_steps)
 
+avg_mse_gb_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, gb_regressor_pipe)	
+avg_mse_gb_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, gb_regressor_pipe)
+avg_mse_gb_parkinson = kFoldMeanSquaredErrorHelper(X_par_train, y_par_train, gb_regressor_pipe)
+avg_mse_gb_redwine = kFoldMeanSquaredErrorHelper(X_rw_train, y_rw_train, gb_regressor_pipe)
 
 # STACKING CLASSIFIER
 

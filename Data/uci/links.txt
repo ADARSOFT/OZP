@@ -1,8 +1,16 @@
 https://www.kaggle.com/allen-institute-for-ai/CORD-19-research-challenge
 
+classification
 http://archive.ics.uci.edu/ml/datasets/Wireless+Indoor+Localization
 http://archive.ics.uci.edu/ml/datasets/Tic-Tac-Toe+Endgame
 http://archive.ics.uci.edu/ml/datasets/Skin+Segmentation
 http://archive.ics.uci.edu/ml/datasets/Somerville+Happiness+Survey
 http://archive.ics.uci.edu/ml/datasets/Mammographic+Mass
-http://archive.ics.uci.edu/ml/datasets/Airfoil+Self-Noise#
+https://www.kaggle.com/mlg-ulb/creditcardfraud
+
+regression
+http://archive.ics.uci.edu/ml/datasets/Airfoil+Self-Noise
+http://archive.ics.uci.edu/ml/datasets/Air+Quality
+http://archive.ics.uci.edu/ml/machine-learning-databases/parkinsons/telemonitoring/
+https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009
+http://archive.ics.uci.edu/ml/datasets/Computer+Hardware
