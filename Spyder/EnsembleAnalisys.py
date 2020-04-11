@@ -19,7 +19,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.pipeline import Pipeline
-import sklearn as sk
+from sklearn.model_selection import KFold
 
 #%% Global configuration part
 
@@ -28,6 +28,16 @@ test_size = 0.3
 
 def doCrossValidation(alg_, X_train, Y_train):
 	return cross_validate(alg_, X_train, Y_train, cv=10, n_jobs=-1, return_train_score=True, scoring = ['precision', 'recall','accuracy','f1'])
+
+def kFoldMeanSquaredErrorHelper(X,y,pipe,folds = 10):
+	kfold = KFold(folds, True, 1)
+	average_mse = 0
+	for train, test in kfold.split(X, y):
+		pipe.fit(X.iloc[train, :], y.iloc[train])
+		pred = [round(value) for value in pipe.predict(X.iloc[test,:])]
+		mse = sum((y.iloc[test] - pred)**2)/len(pred)
+		average_mse += mse
+	return average_mse/folds
 
 #%% Read and prepare data TIC-TAC-TOC set CLASSIFICATION
 colnames=['top-left-square', 'top-middle-square', 'top-right-square', 'middle-left-square','middle-middle-square','middle-right-square','bottom-left-square','bottom-middle-square','bottom-right-square', 'x_win'] 
@@ -99,6 +109,71 @@ y_machine_data = prepared_machine_data.iloc[:,-1]
 
 X_mch_train, X_mch_test, y_mch_train, y_mch_test = train_test_split(X_machine_data, y_machine_data, test_size=test_size, random_state=seed)
 
+#%% Read and prepare data CREDIT CARD FRAUD DETECTION - CLASSIFICATION
+credit_card_fraud_data = pd.read_csv("C:/Work/Repo_OZP/Data/kaggle/creditcard.csv", sep = ",")
+credit_card_fraud_data['Class'].value_counts()
+# Veliki disbalans klasa
+#0    284315
+#1       492
+X_cc_fraud_data = credit_card_fraud_data.iloc[:,:-1]
+y_cc_fraud_data = credit_card_fraud_data.iloc[:,-1]
+X_ccf_train, X_ccf_test, y_ccf_train, y_ccf_test = train_test_split(X_cc_fraud_data, y_cc_fraud_data, test_size=test_size, random_state=seed)
+
+#%% Read and prepare data IOT traffic
+iot_danmini_doorbell_benign_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/benign_traffic.csv", sep = ",")
+iot_danmini_doorbell_benign_data['IsMalignAttack'] = 0;
+iot_danmini_doorbell_malign_gafg_tcp_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/gafgt_attack/tcp.csv", sep = ",")
+iot_danmini_doorbell_malign_gafg_tcp_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_gafg_scan_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/gafgt_attack/scan.csv", sep = ",")
+iot_danmini_doorbell_malign_gafg_scan_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_gafg_udp_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/gafgt_attack/udp.csv", sep = ",")
+iot_danmini_doorbell_malign_gafg_udp_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_gafg_combo_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/gafgt_attack/combo.csv", sep = ",")
+iot_danmini_doorbell_malign_gafg_combo_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_gafg_junk_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/gafgt_attack/junk.csv", sep = ",")
+iot_danmini_doorbell_malign_gafg_junk_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_mirai_ack_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/mirai_attack/ack.csv", sep = ",")
+iot_danmini_doorbell_malign_mirai_ack_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_mirai_scan_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/mirai_attack/scan.csv", sep = ",")
+iot_danmini_doorbell_malign_mirai_scan_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_mirai_udp_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/mirai_attack/udp.csv", sep = ",")
+iot_danmini_doorbell_malign_mirai_udp_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_mirai_syn_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/mirai_attack/syn.csv", sep = ",")
+iot_danmini_doorbell_malign_mirai_syn_data['IsMalignAttack'] = 1
+iot_danmini_doorbell_malign_mirai_udpplain_data = pd.read_csv("C:/Work/Repo_OZP/Data/uci/iot/danmini_doorbell/mirai_attack/udpplain.csv", sep = ",")
+iot_danmini_doorbell_malign_mirai_udpplain_data['IsMalignAttack'] = 1
+
+frames = [iot_danmini_doorbell_benign_data, 
+		  iot_danmini_doorbell_malign_gafg_tcp_data, 
+		  iot_danmini_doorbell_malign_gafg_scan_data,
+		  iot_danmini_doorbell_malign_gafg_udp_data,
+		  iot_danmini_doorbell_malign_gafg_combo_data,
+		  iot_danmini_doorbell_malign_gafg_junk_data,
+		  iot_danmini_doorbell_malign_mirai_ack_data,
+		  iot_danmini_doorbell_malign_mirai_scan_data,
+		  iot_danmini_doorbell_malign_mirai_udp_data,
+		  iot_danmini_doorbell_malign_mirai_syn_data,
+		  iot_danmini_doorbell_malign_mirai_udpplain_data
+		  ]
+
+iot_danmini_doorbell_full_data = pd.concat(frames)
+
+del iot_danmini_doorbell_benign_data
+del iot_danmini_doorbell_malign_gafg_scan_data
+del iot_danmini_doorbell_malign_gafg_udp_data
+del iot_danmini_doorbell_malign_gafg_combo_data
+del iot_danmini_doorbell_malign_gafg_junk_data
+del iot_danmini_doorbell_malign_mirai_ack_data
+del iot_danmini_doorbell_malign_mirai_scan_data
+del iot_danmini_doorbell_malign_mirai_udp_data
+del iot_danmini_doorbell_malign_mirai_syn_data
+del iot_danmini_doorbell_malign_mirai_udpplain_data
+
+# 1 -> 968750
+# 0 -> 49548
+
+X_iot_train, X_iot_test, y_iot_train, y_iot_test = train_test_split(iot_danmini_doorbell_full_data.iloc[:,:-1], iot_danmini_doorbell_full_data.iloc[:,-1], test_size=test_size, random_state=seed)
+
 #%% Running models part 
 
 # XGBoost CLASSIFIER measurements
@@ -110,7 +185,8 @@ xgb_result_mammographia = pd.DataFrame(doCrossValidation(xgb_classifier_pipe, X_
 xgb_result_skin = pd.DataFrame(doCrossValidation(xgb_classifier_pipe, X_s_train, y_s_train)).mean()
 xgb_result_heart = pd.DataFrame(doCrossValidation(xgb_classifier_pipe, X_h_train, y_h_train)).mean()
 xgb_result_tic_tac_toc = pd.DataFrame(doCrossValidation(xgb_classifier_pipe, X_ttt_train, y_ttt_train)).mean()
-
+xgb_result_credit_card_fraud = pd.DataFrame(doCrossValidation(xgb_classifier_pipe, X_ccf_train, y_ccf_train)).mean()
+xgb_result_iot = pd.DataFrame(doCrossValidation(xgb_classifier_pipe, X_iot_train, y_iot_train)).mean()
 
 # XG BOOST REGRESSOR measurements
 
@@ -126,6 +202,11 @@ mch_cv_results = pd.DataFrame(xgb.cv(dtrain=mch_data_dmatrix, params=xgboost_reg
 airfoil_data_dmatrix = xgb.DMatrix(data = X_a_train, label = y_a_train)
 airfoil_cv_results = pd.DataFrame(xgb.cv(dtrain=airfoil_data_dmatrix, params=xgboost_regressor_params, nfold=3, num_boost_round=total_boosting_rounds,early_stopping_rounds=10,metrics="rmse", as_pandas=True, seed=123))
 
+avg_mse_xgb_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, xgb_regressor_pipe)	
+avg_mse_xgb_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, xgb_regressor_pipe)	
+
+
+#%%
 # RANDOM FOREST CLASSIFIER 
 
 rfc_classifier_pipe_steps = [('minMax', MinMaxScaler()), ('rfClassifier', RandomForestClassifier())] 
@@ -135,14 +216,19 @@ rfc_result_mammographia = pd.DataFrame(doCrossValidation(rfc_classifier_pipe, X_
 rfc_result_skin = pd.DataFrame(doCrossValidation(rfc_classifier_pipe, X_s_train, y_s_train)).mean()
 rfc_result_heart = pd.DataFrame(doCrossValidation(rfc_classifier_pipe, X_h_train, y_h_train)).mean()
 rfc_result_tic_tac_toc = pd.DataFrame(doCrossValidation(rfc_classifier_pipe, X_ttt_train, y_ttt_train)).mean()
+rfc_result_credit_card_fraud = pd.DataFrame(doCrossValidation(rfc_classifier_pipe, X_ccf_train, y_ccf_train)).mean()
+rfc_result_iot = pd.DataFrame(doCrossValidation(rfc_classifier_pipe, X_iot_train, y_iot_train)).mean()
 
 # RANDOM FOREST REGRESSOR
 
 rfr_classifier_pipe_steps = [('minMax', MinMaxScaler()), ('rfRegressor', RandomForestRegressor())] 
 rfr_classifier_pipe = Pipeline(steps = rfr_classifier_pipe_steps)
 
-rfc_a_val_score = pd.DataFrame(cross_val_score(rfr_classifier_pipe, X_a_train, y_a_train, cv=30, scoring='neg_mean_squared_error')).abs()
-rfc_mch_val_score = pd.DataFrame(cross_val_score(rfr_classifier_pipe, X_mch_train, y_mch_train, cv=30, scoring='neg_mean_squared_error')).abs()
+rfc_a_val_score = pd.DataFrame(cross_val_score(rfr_classifier_pipe, X_a_train, y_a_train, cv=100, scoring='neg_mean_squared_error')).abs()
+rfc_mch_val_score = pd.DataFrame(cross_val_score(rfr_classifier_pipe, X_mch_train, y_mch_train, cv=100, scoring='neg_mean_squared_error')).abs()
+
+avg_mse_rfc_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, rfr_classifier_pipe)	
+avg_mse_rfc_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, rfr_classifier_pipe)	
 
 # ADABOOST CLASSIFIER
 
@@ -153,6 +239,14 @@ ab_result_mammographia = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_m_
 ab_result_skin = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_s_train, y_s_train)).mean()
 ab_result_heart = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_h_train, y_h_train)).mean()
 ab_result_tic_tac_toc = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_ttt_train, y_ttt_train)).mean()
+ab_result_credit_card_fraud = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_ccf_train, y_ccf_train)).mean()
+ab_result_iot = pd.DataFrame(doCrossValidation(ab_classifier_pipe, X_iot_train, y_iot_train)).mean()
+
+# ADABOOST REGRESSOR
+ab_regressor_pipe_steps = [('minMax', MinMaxScaler()), ('abRegressor', AdaBoostRegressor())] 
+ab_regressor_pipe = Pipeline(steps = ab_regressor_pipe_steps)
+avg_mse_rfc_airfoil = kFoldMeanSquaredErrorHelper(X_a_train, y_a_train, ab_regressor_pipe)	
+avg_mse_rfc_machine = kFoldMeanSquaredErrorHelper(X_mch_train, y_mch_train, ab_regressor_pipe)
 
 # GRADIENT BOOSTING CLASSIFIER
 
@@ -163,6 +257,11 @@ gb_result_mammographia = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_m_
 gb_result_skin = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_s_train, y_s_train)).mean()
 gb_result_heart = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_h_train, y_h_train)).mean()
 gb_result_tic_tac_toc = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_ttt_train, y_ttt_train)).mean()
+gb_result_credit_card_fraud = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_ccf_train, y_ccf_train)).mean()
+gb_result_iot = pd.DataFrame(doCrossValidation(gb_classifier_pipe, X_iot_train, y_iot_train)).mean()
+
+# GRADIENT BOOSTING REGRESSOR
+
 
 # STACKING CLASSIFIER
 
@@ -193,3 +292,9 @@ ttt_train, ttt_test = stacking(stacking_models, X_ttt_train, y_ttt_train, X_ttt_
 fit_ttt_meta_model = meta_model.fit(ttt_train, y_ttt_train)
 ttt_y_pred = fit_ttt_meta_model.predict(ttt_test)
 print('Final prediction score: [%.8f]' % accuracy_score(y_ttt_test, ttt_y_pred))
+
+iot_train, iot_test = stacking(stacking_models, X_iot_train, y_iot_train, X_iot_test, regression=False, mode='oof_pred_bag',needs_proba=False, save_dir=None,metric=accuracy_score,n_folds=4,stratified=True,shuffle=True,random_state=0,verbose=2)
+fit_iot_meta_model = meta_model.fit(iot_train, y_iot_train)
+iot_y_pred = fit_iot_meta_model.predict(iot_test)
+print('Final prediction score: [%.8f]' % accuracy_score(y_iot_test, iot_y_pred))
+
